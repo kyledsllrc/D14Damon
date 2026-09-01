@@ -19,25 +19,19 @@ import { SettingsModal } from './components/SettingsModal';
 import { WelcomeAuthGate } from './components/WelcomeAuthGate';
 import { AdminPanel } from './components/AdminPanel';
 import { ArcadeHub } from './components/ArcadeHub';
-import { AiSketchGuesser } from './components/games/AiSketchGuesser';
-import { EmojiCharades } from './components/games/EmojiCharades';
-import { SpeedDuel } from './components/games/SpeedDuel';
 import { MemoryRush } from './components/games/MemoryRush';
 import { WordBomb } from './components/games/WordBomb';
-import { PixelReveal } from './components/games/PixelReveal';
-import { BlindfoldMaestro } from './components/games/BlindfoldMaestro';
 import { UnoParty } from './components/games/UnoParty';
 import { TriviaDash } from './components/games/TriviaDash';
 import { AnagramRush } from './components/games/AnagramRush';
 import { SoundMystery } from './components/games/SoundMystery';
 import { ReflexNeon } from './components/games/ReflexNeon';
-import { ColorClash } from './components/games/ColorClash';
 import { CyberTyping } from './components/games/CyberTyping';
 import { SimonSequence } from './components/games/SimonSequence';
-import { MathSprint } from './components/games/MathSprint';
 import { EmojiMatch } from './components/games/EmojiMatch';
 import { WhackDoodle } from './components/games/WhackDoodle';
-import { TowerStack } from './components/games/TowerStack';
+import { EightBallPool } from './components/games/EightBallPool';
+import { ChessGame } from './components/games/ChessGame';
 import { NgipMegaWheel } from './components/games/NgipMegaWheel';
 import { NgipVaultHacker } from './components/games/NgipVaultHacker';
 import { ArcadeGameMode } from './types';
@@ -92,36 +86,24 @@ const MainGameContainer: React.FC<{
         return <AnagramRush onBackToHub={leaveRoom} />;
       case 'bomb_chain':
         return <WordBomb onBackToHub={leaveRoom} />;
-      case 'pixel_reveal':
-        return <PixelReveal onBackToHub={leaveRoom} />;
-      case 'blindfold_maestro':
-        return <BlindfoldMaestro onBackToHub={leaveRoom} />;
-      case 'ai_sketch_guess':
-        return <AiSketchGuesser onBackToHub={leaveRoom} />;
-      case 'emoji_charades':
-        return <EmojiCharades onBackToHub={leaveRoom} />;
-      case 'speed_duel':
-        return <SpeedDuel onBackToHub={leaveRoom} />;
       case 'memory_rush':
         return <MemoryRush onBackToHub={leaveRoom} />;
       case 'sound_mystery':
         return <SoundMystery onBackToLobby={leaveRoom} />;
       case 'reflex_neon':
         return <ReflexNeon onBackToLobby={leaveRoom} />;
-      case 'color_clash':
-        return <ColorClash onBackToHub={leaveRoom} />;
       case 'cyber_typing':
         return <CyberTyping onBackToHub={leaveRoom} />;
       case 'simon_sequence':
         return <SimonSequence onBackToHub={leaveRoom} />;
-      case 'math_sprint':
-        return <MathSprint onBackToHub={leaveRoom} />;
       case 'emoji_match':
         return <EmojiMatch onBackToHub={leaveRoom} />;
       case 'whack_doodle':
         return <WhackDoodle onBackToHub={leaveRoom} />;
-      case 'tower_stack':
-        return <TowerStack onBackToHub={leaveRoom} />;
+      case 'eight_ball_pool':
+        return <EightBallPool onBackToHub={leaveRoom} />;
+      case 'chess_game':
+        return <ChessGame onBackToHub={leaveRoom} />;
       case 'ngip_mega_wheel':
         return <NgipMegaWheel onBackToHub={leaveRoom} />;
       case 'ngip_vault_hacker':
@@ -356,72 +338,7 @@ const MainGameContainer: React.FC<{
             </motion.div>
           )}
 
-          {/* MODE 3: PIXEL REVEAL MYSTERY */}
-          {!gameState && currentMode === 'pixel_reveal' && (
-            <motion.div
-              key="pixel_reveal"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-            >
-              <PixelReveal onBackToHub={handleBackToLobby} aiConfig={activeAiConfig} />
-            </motion.div>
-          )}
-
-          {/* MODE 4: BLINDFOLD MAESTRO */}
-          {!gameState && currentMode === 'blindfold_maestro' && (
-            <motion.div
-              key="blindfold_maestro"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-            >
-              <BlindfoldMaestro onBackToHub={handleBackToLobby} />
-            </motion.div>
-          )}
-
-          {/* MODE 5: AI SKETCH GUESSER */}
-          {!gameState && currentMode === 'ai_sketch_guess' && (
-            <motion.div
-              key="ai_sketch_guess"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-            >
-              <AiSketchGuesser onBackToHub={handleBackToLobby} aiConfig={activeAiConfig} />
-            </motion.div>
-          )}
-
-          {/* MODE 6: EMOJI CHARADES */}
-          {!gameState && currentMode === 'emoji_charades' && (
-            <motion.div
-              key="emoji_charades"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-            >
-              <EmojiCharades onBackToHub={handleBackToLobby} aiConfig={activeAiConfig} />
-            </motion.div>
-          )}
-
-          {/* MODE 7: 1v1 SPEED DUEL */}
-          {!gameState && currentMode === 'speed_duel' && (
-            <motion.div
-              key="speed_duel"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-            >
-              <SpeedDuel onBackToHub={handleBackToLobby} aiConfig={activeAiConfig} />
-            </motion.div>
-          )}
-
-          {/* MODE 8: MEMORY DOODLE RUSH */}
+          {/* MODE 3: MEMORY DOODLE RUSH */}
           {!gameState && currentMode === 'memory_rush' && (
             <motion.div
               key="memory_rush"
@@ -460,20 +377,7 @@ const MainGameContainer: React.FC<{
             </motion.div>
           )}
 
-          {/* MODE 11: COLOR CLASH MATRIX */}
-          {!gameState && currentMode === 'color_clash' && (
-            <motion.div
-              key="color_clash"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-            >
-              <ColorClash onBackToHub={handleBackToLobby} />
-            </motion.div>
-          )}
-
-          {/* MODE 12: CYBER VELOCITY TYPING */}
+          {/* MODE 11: CYBER VELOCITY TYPING */}
           {!gameState && currentMode === 'cyber_typing' && (
             <motion.div
               key="cyber_typing"
@@ -486,7 +390,7 @@ const MainGameContainer: React.FC<{
             </motion.div>
           )}
 
-          {/* MODE 13: SIMON SOUND MATRIX */}
+          {/* MODE 12: SIMON SOUND MATRIX */}
           {!gameState && currentMode === 'simon_sequence' && (
             <motion.div
               key="simon_sequence"
@@ -499,20 +403,7 @@ const MainGameContainer: React.FC<{
             </motion.div>
           )}
 
-          {/* MODE 14: MATH SPRINT LIGHTNING */}
-          {!gameState && currentMode === 'math_sprint' && (
-            <motion.div
-              key="math_sprint"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-            >
-              <MathSprint onBackToHub={handleBackToLobby} />
-            </motion.div>
-          )}
-
-          {/* MODE 15: EMOJI TILE MATCH */}
+          {/* MODE 13: EMOJI TILE MATCH */}
           {!gameState && currentMode === 'emoji_match' && (
             <motion.div
               key="emoji_match"
@@ -525,7 +416,7 @@ const MainGameContainer: React.FC<{
             </motion.div>
           )}
 
-          {/* MODE 16: WHACK-A-DOODLE */}
+          {/* MODE 14: WHACK-A-DOODLE */}
           {!gameState && currentMode === 'whack_doodle' && (
             <motion.div
               key="whack_doodle"
@@ -538,20 +429,33 @@ const MainGameContainer: React.FC<{
             </motion.div>
           )}
 
-          {/* MODE 17: CYBER TOWER STACKER */}
-          {!gameState && currentMode === 'tower_stack' && (
+          {/* MODE 15: 8 BALL POOL */}
+          {!gameState && currentMode === 'eight_ball_pool' && (
             <motion.div
-              key="tower_stack"
+              key="eight_ball_pool"
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.2 }}
             >
-              <TowerStack onBackToHub={handleBackToLobby} />
+              <EightBallPool onBackToHub={handleBackToLobby} />
             </motion.div>
           )}
 
-          {/* MODE 18: งip SUPREME HIGH ROLLER WHEEL */}
+          {/* MODE 16: CHESS */}
+          {!gameState && currentMode === 'chess_game' && (
+            <motion.div
+              key="chess_game"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+            >
+              <ChessGame onBackToHub={handleBackToLobby} />
+            </motion.div>
+          )}
+
+          {/* MODE 17: งip SUPREME HIGH ROLLER WHEEL */}
           {!gameState && currentMode === 'ngip_mega_wheel' && (
             <motion.div
               key="ngip_mega_wheel"

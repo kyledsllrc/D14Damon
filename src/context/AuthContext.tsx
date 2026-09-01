@@ -32,7 +32,7 @@ import {
 import { soundManager } from '../utils/soundEffects';
 
 const STORAGE_KEY_USER = 'guess_what_current_user';
-export const ADMIN_EMAILS = ['franklinkyleluzano@gmail.com'];
+export const ADMIN_EMAILS = ['kyledesillarico@gmail.com'];
 export const OWNER_ADMIN_EMAIL = ADMIN_EMAILS[0];
 export const NGIP_DAILY_SALARY_AMOUNT = '100000'; // 100,000 for each currency
 export const SALARY_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 Hours in ms

@@ -4,14 +4,14 @@ export type WordDifficulty = 'easy' | 'medium' | 'hard';
 
 export type WordCategory = 'all' | 'animals' | 'food' | 'objects' | 'places' | 'actions' | 'pop_culture';
 
-export type ArcadeGameMode = 
-  | 'multiplayer_draw' 
+export type ArcadeGameMode =
+  | 'multiplayer_draw'
   | 'uno_party'
-  | 'ai_sketch_guess' 
+  | 'ai_sketch_guess'
   | 'trivia_dash'
   | 'anagram_rush'
-  | 'emoji_charades' 
-  | 'speed_duel' 
+  | 'emoji_charades'
+  | 'speed_duel'
   | 'memory_rush'
   | 'bomb_chain'
   | 'pixel_reveal'
@@ -25,6 +25,8 @@ export type ArcadeGameMode =
   | 'emoji_match'
   | 'whack_doodle'
   | 'tower_stack'
+  | 'eight_ball_pool'
+  | 'chess_game'
   | 'ngip_mega_wheel'
   | 'ngip_vault_hacker';
 

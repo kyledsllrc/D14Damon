@@ -61,24 +61,6 @@ interface AiGameOption {
 
 const AI_GAMES: AiGameOption[] = [
   {
-    id: 'ai_sketch_guess',
-    name: 'AI Sketch Guesser',
-    tagline: 'Draw live while neural AI guesses your sketches in real-time',
-    icon: Bot,
-    accentColor: 'from-purple-600 to-indigo-600',
-    badge: 'Neural Vision',
-    category: 'Drawing & Vision',
-  },
-  {
-    id: 'speed_duel',
-    name: '1v1 Canvas Speed Duel',
-    tagline: 'Side-by-side prompt duel scored by live AI vision bot',
-    icon: Swords,
-    accentColor: 'from-orange-600 to-rose-600',
-    badge: '1v1 Arena',
-    category: 'Drawing Duel',
-  },
-  {
     id: 'uno_party',
     name: 'UNO Party Showdown',
     tagline: 'Official UNO card rules with skips, reverse & smart bot AI',
@@ -95,15 +77,6 @@ const AI_GAMES: AiGameOption[] = [
     accentColor: 'from-amber-600 to-orange-600',
     badge: 'Syllable Rush',
     category: 'Word Action',
-  },
-  {
-    id: 'pixel_reveal',
-    name: 'Pixel Reveal Mystery',
-    tagline: 'De-pixelating artwork with early guess speed bonuses vs AI',
-    icon: Eye,
-    accentColor: 'from-cyan-600 to-blue-600',
-    badge: 'Visual Rush',
-    category: 'Mystery Visuals',
   },
   {
     id: 'trivia_dash',
@@ -124,24 +97,6 @@ const AI_GAMES: AiGameOption[] = [
     category: 'Word Logic',
   },
   {
-    id: 'emoji_charades',
-    name: 'Emoji Charades',
-    tagline: 'Decode movies, idioms & pop culture clues from emoji puzzles',
-    icon: Puzzle,
-    accentColor: 'from-teal-600 to-cyan-600',
-    badge: 'Pop Culture',
-    category: 'Emoji Puzzles',
-  },
-  {
-    id: 'blindfold_maestro',
-    name: 'Blindfold Maestro',
-    tagline: 'Draw unseen with hidden canvas until the grand final reveal',
-    icon: Theater,
-    accentColor: 'from-pink-600 to-purple-600',
-    badge: 'Blind Canvas',
-    category: 'Solo Art',
-  },
-  {
     id: 'cyber_typing',
     name: 'Cyber Velocity Typing',
     tagline: 'High-speed WPM velocity rush against AI typing challenger',
@@ -151,22 +106,22 @@ const AI_GAMES: AiGameOption[] = [
     category: 'Velocity Typing',
   },
   {
-    id: 'math_sprint',
-    name: 'Math Sprint 60s',
-    tagline: 'Rapid mental arithmetic sprint vs AI calculation engine',
-    icon: Calculator,
-    accentColor: 'from-amber-600 to-lime-600',
-    badge: 'Mental Math',
-    category: 'Math Speed',
+    id: 'eight_ball_pool',
+    name: '8 Ball Pool',
+    tagline: 'Line up a legendary break, control the cue angle, and outplay the AI at the table',
+    icon: Swords,
+    accentColor: 'from-emerald-600 to-cyan-600',
+    badge: 'Table Clash',
+    category: 'Cue Sport',
   },
   {
-    id: 'color_clash',
-    name: 'Color Clash Matrix',
-    tagline: 'Stroop effect color vs text rapid reflex reaction duel',
-    icon: Zap,
-    accentColor: 'from-rose-600 to-violet-600',
-    badge: 'Stroop Reflex',
-    category: 'Reflex Matrix',
+    id: 'chess_game',
+    name: 'Chess',
+    tagline: 'Think ahead and outmaneuver the AI with pace, traps, and classic strategic play',
+    icon: ShieldCheck,
+    accentColor: 'from-violet-600 to-purple-600',
+    badge: 'Strategy',
+    category: 'Board Game',
   },
 ];
 
@@ -228,7 +183,7 @@ const DIFFICULTY_CONFIG: Record<
 export const VsAiArena: React.FC<VsAiArenaProps> = ({ onLaunchGame }) => {
   const { user, placeBet } = useAuth();
 
-  const [selectedGame, setSelectedGame] = useState<ArcadeGameMode>('ai_sketch_guess');
+  const [selectedGame, setSelectedGame] = useState<ArcadeGameMode>('uno_party');
   const [selectedDifficulty, setSelectedDifficulty] = useState<AiDifficulty>('moderate');
   const [withBet, setWithBet] = useState<boolean>(false);
   const [betCurrency, setBetCurrency] = useState<CurrencyType>('diamond');
