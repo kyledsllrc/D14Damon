@@ -15,6 +15,7 @@ import { GlobalLeaderboard } from './components/GlobalLeaderboard';
 import { ProfileModal } from './components/ProfileModal';
 import { AuthModal } from './components/AuthModal';
 import { DailyMissionsModal } from './components/DailyMissionsModal';
+import { SettingsModal } from './components/SettingsModal';
 import { WelcomeAuthGate } from './components/WelcomeAuthGate';
 import { AdminPanel } from './components/AdminPanel';
 import { ArcadeHub } from './components/ArcadeHub';
@@ -48,6 +49,7 @@ const MainGameContainer: React.FC<{
   setCurrentMode: (mode: ArcadeGameMode) => void;
   onOpenLeaderboard: () => void;
   onOpenProfile: () => void;
+  onOpenSettings: () => void;
   onOpenAuth: () => void;
   onOpenAuthGate: () => void;
   onOpenAdmin: () => void;
@@ -57,6 +59,7 @@ const MainGameContainer: React.FC<{
   setCurrentMode,
   onOpenLeaderboard,
   onOpenProfile,
+  onOpenSettings,
   onOpenAuth,
   onOpenAuthGate,
   onOpenAdmin,
@@ -140,6 +143,7 @@ const MainGameContainer: React.FC<{
         onSelectMode={setCurrentMode}
         onOpenLeaderboard={onOpenLeaderboard}
         onOpenProfile={onOpenProfile}
+        onOpenSettings={onOpenSettings}
         onOpenAuth={onOpenAuth}
         onOpenAuthGate={onOpenAuthGate}
         onOpenAdmin={onOpenAdmin}
@@ -592,6 +596,7 @@ export default function App() {
   const [currentMode, setCurrentMode] = useState<ArcadeGameMode>('multiplayer_draw');
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
   const [showDailyMissions, setShowDailyMissions] = useState(false);
@@ -624,6 +629,7 @@ export default function App() {
                 setCurrentMode={setCurrentMode}
                 onOpenLeaderboard={() => setShowLeaderboard(true)}
                 onOpenProfile={() => setShowProfile(true)}
+                onOpenSettings={() => setShowSettings(true)}
                 onOpenAuth={() => setShowAuth(true)}
                 onOpenAuthGate={() => setHasEnteredApp(false)}
                 onOpenAdmin={() => setShowAdmin(true)}
@@ -645,6 +651,12 @@ export default function App() {
         <ProfileModal
           isOpen={showProfile}
           onClose={() => setShowProfile(false)}
+          onOpenSettings={() => setShowSettings(true)}
+        />
+        <SettingsModal
+          isOpen={showSettings}
+          onClose={() => setShowSettings(false)}
+          onOpenAuthGate={() => setHasEnteredApp(false)}
         />
         <AuthModal
           isOpen={showAuth}

@@ -38,9 +38,14 @@ import { CurrencyType } from '../types';
 import { soundManager } from '../utils/soundEffects';
 import { NgipBadge, NgipName } from './NgipBadge';
 
-export const ProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
+export const ProfileModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  onOpenSettings?: () => void;
+}> = ({
   isOpen,
   onClose,
+  onOpenSettings,
 }) => {
   const {
     user,
@@ -141,17 +146,33 @@ export const ProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
                 <span>Back</span>
               </button>
               <h3 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5 ml-1">
-                <Settings className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                <span>Player Profile & Settings</span>
+                <User className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                <span>Player Profile & Stats</span>
               </h3>
             </div>
 
-            <button
-              onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-1">
+              {onOpenSettings && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onOpenSettings();
+                  }}
+                  className="p-1.5 text-xs font-bold text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-950/60 rounded-xl flex items-center gap-1 transition-colors cursor-pointer"
+                  title="Open App Settings"
+                >
+                  <Settings className="w-4 h-4" />
+                  <span className="hidden sm:inline">Settings</span>
+                </button>
+              )}
+              <button
+                onClick={onClose}
+                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
           {/* Success toast */}

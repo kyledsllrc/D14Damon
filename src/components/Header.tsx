@@ -10,6 +10,7 @@ import {
   ShieldAlert,
   Gift,
   Flame,
+  Settings as SettingsIcon,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useGame } from '../context/GameContext';
@@ -17,7 +18,6 @@ import { ArcadeGameMode } from '../types';
 import { AvatarRenderer } from './AvatarRenderer';
 import { GWLogo } from './GWLogo';
 import { NgipBadge, NgipName } from './NgipBadge';
-import { DarkModeToggle } from './DarkModeToggle';
 import { themeMusic, ThemeMusicState } from '../utils/themeMusic';
 import { WinstreakBanner } from './WinstreakBanner';
 
@@ -26,6 +26,7 @@ interface HeaderProps {
   onSelectMode?: (mode: ArcadeGameMode) => void;
   onOpenLeaderboard: () => void;
   onOpenProfile: () => void;
+  onOpenSettings: () => void;
   onOpenAuth: () => void;
   onOpenAuthGate?: () => void;
   onOpenAdmin?: () => void;
@@ -37,6 +38,7 @@ export const Header: React.FC<HeaderProps> = ({
   onSelectMode,
   onOpenLeaderboard,
   onOpenProfile,
+  onOpenSettings,
   onOpenAuth,
   onOpenAuthGate,
   onOpenAdmin,
@@ -107,45 +109,8 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
 
-        {/* Right: Dark Mode Toggle, Theme Music Toggle, Leaderboard, Profile Avatar & Auth Actions */}
+        {/* Right: Missions, Hall of Fame, Settings, Profile Avatar & Auth Actions */}
         <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-          {/* Dark Mode ON / OFF Button Switch */}
-          <DarkModeToggle />
-
-          {/* Theme Song Speaker / Music Button */}
-          <button
-            type="button"
-            onClick={() => themeMusic.toggle()}
-            className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl border-2 text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer shadow-xs shrink-0 ${
-              musicState.isPlaying
-                ? 'bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 text-white border-purple-400 shadow-purple-500/25 ring-2 ring-purple-500/30'
-                : 'bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 border-slate-300 dark:border-purple-900 text-slate-600 dark:text-purple-300'
-            }`}
-            title={
-              musicState.isPlaying
-                ? 'Theme Song: Battle Hymn (Rockhestra) Playing — Tap to Pause'
-                : 'Theme Song: Battle Hymn (Rockhestra) — Tap to Play'
-            }
-          >
-            {musicState.isPlaying ? (
-              <>
-                <Volume2 className="w-3.5 h-3.5 text-pink-200 animate-pulse" />
-                <span className="hidden md:inline text-[11px] font-bold">Theme ON</span>
-                {/* 3 mini dancing equalizer bars */}
-                <div className="hidden min-[480px]:flex items-end gap-0.5 h-3">
-                  <span className="w-0.5 bg-white rounded-full animate-bounce [animation-delay:-0.3s] h-full" />
-                  <span className="w-0.5 bg-white rounded-full animate-bounce [animation-delay:-0.15s] h-2" />
-                  <span className="w-0.5 bg-white rounded-full animate-bounce [animation-delay:0s] h-2.5" />
-                </div>
-              </>
-            ) : (
-              <>
-                <VolumeX className="w-3.5 h-3.5 opacity-70" />
-                <span className="hidden md:inline text-[11px] font-bold opacity-80">Theme OFF</span>
-              </>
-            )}
-          </button>
-
           {/* Quick Leave Room Button */}
           {gameState && (
             <button
@@ -184,6 +149,20 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="hidden sm:inline">Hall of Fame</span>
           </button>
 
+          {/* ⚙️ Professional Settings Button (Appearance, Music, SFX & Profile Controls) */}
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            className="p-1.5 sm:px-3 sm:py-1.5 text-xs font-black text-purple-700 dark:text-purple-300 bg-purple-100/80 dark:bg-purple-950/50 hover:bg-purple-200/90 dark:hover:bg-purple-900/70 border-2 border-purple-300 dark:border-purple-700/80 rounded-xl transition-all shadow-xs shrink-0 cursor-pointer flex items-center gap-1.5 group"
+            title="Settings (Dark Mode, Theme Music, Audio, Profile & System)"
+          >
+            <SettingsIcon className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 group-hover:rotate-45 transition-transform duration-300" />
+            <span className="hidden sm:inline">Settings</span>
+            {musicState.isPlaying && (
+              <span className="w-1.5 h-1.5 rounded-full bg-pink-500 animate-ping shrink-0" title="Theme Music Playing" />
+            )}
+          </button>
+
           {/* Admin Panel Master Command Button */}
           {isAdmin && onOpenAdmin && (
             <button
@@ -204,7 +183,7 @@ export const Header: React.FC<HeaderProps> = ({
                 type="button"
                 onClick={onOpenProfile}
                 className="flex items-center gap-1 sm:gap-1.5 p-1 sm:pl-1.5 sm:pr-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 border-2 border-slate-300 dark:border-purple-800/80 transition-all shrink-0 cursor-pointer shadow-xs"
-                title={`${user.username} (Lvl ${user.level})`}
+                title={`${user.username} (Lvl ${user.level}) — View Profile`}
               >
                 <div className="w-6 h-6 rounded-full overflow-hidden flex items-center justify-center text-xs select-none bg-slate-200 dark:bg-slate-800 relative shrink-0">
                   <AvatarRenderer avatar={user.avatar} className="w-full h-full object-cover" />
