@@ -319,29 +319,31 @@ export const EightBallPool: React.FC<EightBallPoolProps> = ({ onBackToHub, aiCon
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_260px] gap-4">
-        <div className="relative overflow-hidden rounded-[28px] border border-[#2b4d3f] bg-gradient-to-b from-[#1d6c43] via-[#0d7a47] to-[#0e5f39] shadow-[0_25px_60px_rgba(7,47,20,0.45)] p-3">
-          <div className="absolute inset-x-5 top-3 h-12 rounded-full bg-[#8b5a2b]/30 blur-xl" />
+        <div className="relative overflow-hidden rounded-[30px] border border-[#bd8b40] bg-gradient-to-b from-[#7f4f1b] via-[#62401a] to-[#4d3313] p-3 shadow-[0_25px_60px_rgba(15,23,42,0.45)]">
+          <div className="absolute inset-x-6 top-3 h-12 rounded-full bg-[#f5d9a3]/30 blur-2xl" />
           <div
             ref={tableRef}
-            className="relative mx-auto overflow-hidden rounded-[24px] border-[8px] border-[#a66d2d] bg-[radial-gradient(circle_at_center,_rgba(33,200,96,0.42),_rgba(8,120,70,0.96))] shadow-inner"
+            className="relative mx-auto overflow-hidden rounded-[20px] border-[8px] border-[#b7772d] bg-[radial-gradient(circle_at_center,_rgba(58,191,106,0.6),_rgba(7,96,55,0.98)_58%,_rgba(5,72,41,1)_100%)] shadow-[inset_0_0_0_2px_rgba(255,255,255,0.08),inset_0_0_35px_rgba(0,0,0,0.18)]"
             style={{ width: '100%', maxWidth: 820, height: 430 }}
             onMouseMove={handleAimMove}
             onClick={handleAimMove}
           >
+            <div className="absolute inset-0 rounded-[12px] border border-white/10" />
+            <div className="absolute left-0 right-0 top-1/2 h-px bg-white/12" />
+            <div className="absolute top-0 bottom-0 left-1/2 w-px bg-white/12" />
+
             {[...Array(6)].map((_, index) => {
               const pocket = POCKETS[index];
               return (
                 <div
                   key={`pocket-${index}`}
-                  className="absolute rounded-full bg-[#0f172a] border-2 border-[#1e293b] shadow-[inset_0_0_12px_rgba(0,0,0,0.7)]"
+                  className="absolute rounded-full bg-[#0a1220] border-2 border-[#1b2838] shadow-[inset_0_0_10px_rgba(0,0,0,0.9)]"
                   style={{ left: pocket.x - 15, top: pocket.y - 15, width: 30, height: 30 }}
                 />
               );
             })}
 
-            <div className="absolute inset-[18px] border border-white/15 rounded-[18px]" />
-            <div className="absolute inset-[36px] border border-white/10 rounded-[14px]" />
-            <div className="absolute left-0 right-0 top-1/2 h-px bg-white/10" />
+            <div className="absolute left-[18px] top-[18px] right-[18px] bottom-[18px] rounded-[12px] border border-white/10" />
 
             {balls.map((ball) => (
               <motion.div
@@ -349,15 +351,17 @@ export const EightBallPool: React.FC<EightBallPoolProps> = ({ onBackToHub, aiCon
                 animate={{
                   x: ball.x - ball.radius,
                   y: ball.y - ball.radius,
-                  scale: ball.pocketed ? 0.7 : 1,
-                  opacity: ball.pocketed ? 0.1 : 1,
+                  scale: ball.pocketed ? 0.72 : 1,
+                  opacity: ball.pocketed ? 0.12 : 1,
                 }}
-                transition={{ type: 'spring', stiffness: 180, damping: 18 }}
-                className="absolute rounded-full border-[2px] border-slate-900/60 shadow-[inset_-4px_-4px_0_rgba(15,23,42,0.2),0_0_12px_rgba(255,255,255,0.12)]"
+                transition={{ type: 'spring', stiffness: 220, damping: 20 }}
+                className="absolute rounded-full border-[2px] border-slate-900/75 shadow-[inset_-6px_-6px_0_rgba(15,23,42,0.24),0_2px_10px_rgba(15,23,42,0.35)]"
                 style={{
                   width: ball.radius * 2,
                   height: ball.radius * 2,
-                  background: ball.type === 'stripe' ? `linear-gradient(135deg, ${ball.color} 0%, ${ball.color} 40%, rgba(255,255,255,0.9) 40%, rgba(255,255,255,0.9) 55%, ${ball.color} 55%, ${ball.color} 100%)` : ball.color,
+                  background: ball.type === 'stripe'
+                    ? `linear-gradient(135deg, ${ball.color} 0%, ${ball.color} 42%, rgba(255,255,255,0.9) 42%, rgba(255,255,255,0.9) 58%, ${ball.color} 58%, ${ball.color} 100%)`
+                    : ball.color,
                   left: 0,
                   top: 0,
                 }}
@@ -382,7 +386,7 @@ export const EightBallPool: React.FC<EightBallPoolProps> = ({ onBackToHub, aiCon
                   transformOrigin: '0 50%',
                 }}
               >
-                <div className="h-full w-full rounded-full bg-white/80 shadow-[0_0_18px_rgba(255,255,255,0.8)]" />
+                <div className="h-full w-full rounded-full bg-white/85 shadow-[0_0_18px_rgba(255,255,255,0.9)]" />
               </div>
             )}
           </div>

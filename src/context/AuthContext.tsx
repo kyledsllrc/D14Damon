@@ -16,7 +16,6 @@ import {
   getFirebaseAuth,
   initFirebaseService,
   logActivityToFirestore,
-  subscribeToFirestoreActivities,
 } from '../services/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { PRESET_AVATARS } from '../utils/avatarIcons';
@@ -32,7 +31,10 @@ import {
 import { soundManager } from '../utils/soundEffects';
 
 const STORAGE_KEY_USER = 'guess_what_current_user';
-export const ADMIN_EMAILS = ['kyledesillarico@gmail.com'];
+export const ADMIN_EMAILS = [
+  'kyledesillarico@gmail.com',
+  'kyledsllrc@gmail.com',
+];
 export const OWNER_ADMIN_EMAIL = ADMIN_EMAILS[0];
 export const NGIP_DAILY_SALARY_AMOUNT = '100000'; // 100,000 for each currency
 export const SALARY_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 Hours in ms
@@ -309,14 +311,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     hydrateRegisteredUsers();
 
-    // 1. Subscribe to live global activities
-    const unsubActivities = subscribeToFirestoreActivities((liveActs) => {
-      if (liveActs && liveActs.length > 0) {
-        setActivities(liveActs);
-      }
-    });
+    // Keep Firestore limited to user records + leaderboard stats.
+    // Local activity feed is preserved without remote writes or subscriptions.
 
-    // 2. Subscribe to all registered/active user accounts for admin panel
+    // 1. Subscribe to all registered/active user accounts for admin panel
     const unsubUsers = subscribeToAllUsersFromFirestore((liveUsers) => {
       if (liveUsers && liveUsers.length > 0) {
         setAllRegisteredUsers(liveUsers.map(normalizeUserProfile));
@@ -433,13 +431,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return () => {
         unsubscribeAuth();
         if (unsubRealtimeProfile) unsubRealtimeProfile();
-        unsubActivities();
         unsubUsers();
       };
     }
 
     return () => {
-      unsubActivities();
       unsubUsers();
     };
   }, []);
@@ -483,8 +479,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Optimistically prepend to activities state
     setActivities((prev) => [newAct, ...prev.filter((a) => a.id !== newAct.id)].slice(0, 50));
 
-    // Save to Firestore
-    logActivityToFirestore(newAct);
+    // Keep activity feed local-only to avoid unnecessary Firestore quota usage.
   };
 
   const updateStats = (statDelta: Partial<PlayerStats>, wonGame: boolean = false, gameTitle?: string) => {

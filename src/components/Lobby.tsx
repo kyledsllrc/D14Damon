@@ -9,7 +9,6 @@ import {
   Lock,
   Globe,
   RefreshCw,
-  Coins,
   ChevronRight,
   ShieldCheck,
   Check,
@@ -36,21 +35,11 @@ import {
   ArcadeGameMode,
   WordCategory,
   RoomSettings,
-  CurrencyType,
-  BettingConfig,
   RoomSummary,
   UnoTeamMode,
 } from '../types';
 import { useGame } from '../context/GameContext';
 import { useAuth } from '../context/AuthContext';
-import {
-  CURRENCY_CONFIG,
-  getWalletKey,
-  formatCompactCurrency,
-  formatFullCurrency,
-  BET_PRESET_PACKAGES,
-  toBigInt,
-} from '../utils/currencyUtils';
 import { soundManager } from '../utils/soundEffects';
 import { VsAiArena, AiGameConfig } from './VsAiArena';
 
@@ -165,7 +154,7 @@ export const Lobby: React.FC<LobbyProps> = ({
   onLaunchAiGame,
 }) => {
   const { quickJoin, createRoom, joinRoom, publicRooms, fetchPublicRooms, errorMessage, clearError } = useGame();
-  const { user, placeBet } = useAuth();
+  const { user } = useAuth();
 
   const [roomCodeInput, setRoomCodeInput] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -185,10 +174,6 @@ export const Lobby: React.FC<LobbyProps> = ({
   const [isPrivate, setIsPrivate] = useState(false);
   const [allowHints, setAllowHints] = useState(true);
 
-  // Betting state for Create Room (Room Owner Choice)
-  const [enableBetting, setEnableBetting] = useState<boolean>(false);
-  const [betCurrency, setBetCurrency] = useState<CurrencyType>('diamond');
-  const [betAmount, setBetAmount] = useState<string>('100000'); // 100K default
   const [betError, setBetError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -221,37 +206,6 @@ export const Lobby: React.FC<LobbyProps> = ({
   // Safe Room Joining with Room Owner's Locked Currency Enforcement
   const handleJoinPublicRoom = (r: RoomSummary) => {
     setJoinBetError(null);
-
-    // If room has betting enabled, player MUST bet the exact currency specified by the room owner!
-    if (r.betting && r.betting.enabled) {
-      const lockedCurrency = r.betting.currency;
-      const requiredAmount = r.betting.amount;
-      const key = getWalletKey(lockedCurrency);
-      const userBalance = user?.wallet?.[key] || '0';
-
-      const userBalBi = toBigInt(userBalance);
-      const reqAmountBi = toBigInt(requiredAmount);
-
-      if (userBalBi < reqAmountBi) {
-        setJoinBetError(
-          `Cannot join "${r.name}": Room host set a mandatory bet of ${formatCompactCurrency(
-            requiredAmount
-          )} ${CURRENCY_CONFIG[lockedCurrency].name}. Your ${CURRENCY_CONFIG[lockedCurrency].name} balance is ${formatCompactCurrency(
-            userBalance
-          )}.`
-        );
-        soundManager.playError();
-        return;
-      }
-
-      // Deduct bet from joining player's balance
-      const placed = placeBet(lockedCurrency, requiredAmount);
-      if (!placed) {
-        setJoinBetError('Failed to place bet for this room. Please verify your balance.');
-        return;
-      }
-    }
-
     soundManager.playButton();
     joinRoom(r.code);
   };
@@ -259,47 +213,6 @@ export const Lobby: React.FC<LobbyProps> = ({
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setBetError(null);
-
-    let bettingConfig: BettingConfig = {
-      enabled: false,
-      currency: 'diamond',
-      amount: '0',
-      totalPot: '0',
-    };
-
-    if (enableBetting) {
-      const biAmount = toBigInt(betAmount);
-      if (biAmount <= 0n) {
-        setBetError('Bet amount must be greater than 0');
-        return;
-      }
-
-      // Check if room owner has sufficient funds in their chosen currency
-      const userBalance = user?.wallet?.[getWalletKey(betCurrency)] || '0';
-      if (toBigInt(userBalance) < biAmount) {
-        setBetError(
-          `Insufficient ${CURRENCY_CONFIG[betCurrency].name} balance. You have ${formatCompactCurrency(
-            userBalance
-          )}, but bet is ${formatCompactCurrency(betAmount)}.`
-        );
-        return;
-      }
-
-      // Deduct bet from room creator's wallet
-      const success = placeBet(betCurrency, betAmount);
-      if (!success) {
-        setBetError('Failed to place bet. Insufficient funds.');
-        return;
-      }
-
-      // Lock room to creator's chosen currency
-      bettingConfig = {
-        enabled: true,
-        currency: betCurrency,
-        amount: betAmount,
-        totalPot: betAmount,
-      };
-    }
 
     const settings: RoomSettings = {
       roundDuration,
@@ -312,7 +225,6 @@ export const Lobby: React.FC<LobbyProps> = ({
       botPlayersEnabled: false,
       gameMode: selectedGameMode,
       unoTeamMode: selectedGameMode === 'uno_party' ? unoTeamMode : undefined,
-      betting: bettingConfig,
     };
 
     createRoom(settings, roomName.trim() || `${user?.username || 'Player'}'s Arena`);
@@ -324,9 +236,6 @@ export const Lobby: React.FC<LobbyProps> = ({
       r.name.toLowerCase().includes(roomSearch.toLowerCase()) ||
       r.code.toLowerCase().includes(roomSearch.toLowerCase())
   );
-
-  const currencies: CurrencyType[] = ['diamond', 'amethyst', 'jade', 'ruby'];
-  const userBalance = user?.wallet?.[getWalletKey(betCurrency)] || '0';
 
   return (
     <div className="max-w-6xl mx-auto px-2 sm:px-4 py-4 sm:py-6 space-y-6 sm:space-y-8 animate-fade-in w-full">
@@ -433,7 +342,7 @@ export const Lobby: React.FC<LobbyProps> = ({
                 </span>
               </h3>
               <p className="text-xs text-slate-500">
-                Browse multiplayer rooms, view locked currency stakes, and join with one click!
+                Browse multiplayer rooms and join with one click, without any wager or currency restrictions.
               </p>
             </div>
 
@@ -486,82 +395,60 @@ export const Lobby: React.FC<LobbyProps> = ({
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[340px] overflow-y-auto pr-1">
-              {filteredRooms.map((r) => {
-                const hasBet = r.betting && r.betting.enabled;
-                const betCurrMeta = hasBet ? CURRENCY_CONFIG[r.betting!.currency] : null;
-
-                return (
-                  <div
-                    key={r.id}
-                    className="p-3.5 rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 hover:border-indigo-400 dark:hover:border-indigo-700 transition-all flex flex-col justify-between gap-2.5 group"
-                  >
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between gap-1.5">
-                        <div className="flex items-center gap-1 font-mono text-[11px] font-black tracking-widest text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 px-2 py-0.5 rounded-lg border border-indigo-200 dark:border-indigo-800">
-                          <span>#{r.code}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          {r.isPrivate ? (
-                            <span className="p-1 rounded-lg bg-purple-50 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400 text-[10px] font-bold flex items-center gap-1">
-                              <Lock className="w-3 h-3" />
-                              <span>Private</span>
-                            </span>
-                          ) : (
-                            <span className="p-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold flex items-center gap-1">
-                              <Globe className="w-3 h-3" />
-                              <span>Public</span>
-                            </span>
-                          )}
-                          <span className="px-2 py-0.5 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-bold">
-                            {r.playerCount}/{r.maxPlayers}
-                          </span>
-                        </div>
+              {filteredRooms.map((r) => (
+                <div
+                  key={r.id}
+                  className="p-3.5 rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 hover:border-indigo-400 dark:hover:border-indigo-700 transition-all flex flex-col justify-between gap-2.5 group"
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between gap-1.5">
+                      <div className="flex items-center gap-1 font-mono text-[11px] font-black tracking-widest text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 px-2 py-0.5 rounded-lg border border-indigo-200 dark:border-indigo-800">
+                        <span>#{r.code}</span>
                       </div>
-
-                      <div>
-                        <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate">
-                          {r.name}
-                        </h4>
-                        <p className="text-[10px] text-slate-500">
-                          Host:{' '}
-                          <strong className="text-slate-700 dark:text-slate-300">{r.hostName}</strong>
-                        </p>
-                      </div>
-
-                      {/* Betting currency badge */}
-                      {hasBet && betCurrMeta && (
-                        <div
-                          className={`p-1.5 rounded-xl text-[11px] font-bold border flex items-center justify-between ${betCurrMeta.bgColor} ${betCurrMeta.borderColor}`}
-                        >
-                          <div className="flex items-center gap-1">
-                            <span>{betCurrMeta.symbol}</span>
-                            <span className={`text-[10px] font-black ${betCurrMeta.textColor}`}>
-                              {betCurrMeta.name}
-                            </span>
-                          </div>
-                          <span className="font-mono font-black text-slate-900 dark:text-white text-[10px]">
-                            {formatCompactCurrency(r.betting!.amount)}
+                      <div className="flex items-center gap-1">
+                        {r.isPrivate ? (
+                          <span className="p-1 rounded-lg bg-purple-50 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400 text-[10px] font-bold flex items-center gap-1">
+                            <Lock className="w-3 h-3" />
+                            <span>Private</span>
                           </span>
-                        </div>
-                      )}
+                        ) : (
+                          <span className="p-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold flex items-center gap-1">
+                            <Globe className="w-3 h-3" />
+                            <span>Public</span>
+                          </span>
+                        )}
+                        <span className="px-2 py-0.5 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-bold">
+                          {r.playerCount}/{r.maxPlayers}
+                        </span>
+                      </div>
                     </div>
 
-                    <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-slate-400">
-                        R{r.currentRound}/{r.maxRounds} • {r.roundDuration}s
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleJoinPublicRoom(r)}
-                        className="px-3 py-1 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all flex items-center gap-1 shadow-xs cursor-pointer active:scale-95"
-                      >
-                        <span>Join</span>
-                        <ChevronRight className="w-3 h-3" />
-                      </button>
+                    <div>
+                      <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate">
+                        {r.name}
+                      </h4>
+                      <p className="text-[10px] text-slate-500">
+                        Host:{' '}
+                        <strong className="text-slate-700 dark:text-slate-300">{r.hostName}</strong>
+                      </p>
                     </div>
                   </div>
-                );
-              })}
+
+                  <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-slate-400">
+                      R{r.currentRound}/{r.maxRounds} • {r.roundDuration}s
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleJoinPublicRoom(r)}
+                      className="px-3 py-1 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all flex items-center gap-1 shadow-xs cursor-pointer active:scale-95"
+                    >
+                      <span>Join</span>
+                      <ChevronRight className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -592,7 +479,7 @@ export const Lobby: React.FC<LobbyProps> = ({
                   Create Custom Room
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Select game mode, privacy, and set mandatory betting stakes for your arena.
+                  Select your game mode and room settings for a clean multiplayer lobby.
                 </p>
               </div>
               <button
@@ -695,118 +582,18 @@ export const Lobby: React.FC<LobbyProps> = ({
                 />
               </div>
 
-              {/* 3. Room Owner Currency Betting Choice */}
-              <div className="p-3 bg-gradient-to-br from-slate-50 to-indigo-50/30 dark:from-slate-800/50 dark:to-indigo-950/30 rounded-2xl border border-indigo-200 dark:border-indigo-800 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Coins className="w-4 h-4 text-amber-500" />
-                    <div>
-                      <span className="font-extrabold text-slate-900 dark:text-white block">
-                        Currency Betting Stakes
-                      </span>
-                      <span className="text-[10px] text-slate-400">
-                        You choose the currency; all joining players match in this currency.
-                      </span>
-                    </div>
+              <div className="p-3 bg-gradient-to-br from-slate-50 to-indigo-50/30 dark:from-slate-800/50 dark:to-indigo-950/30 rounded-2xl border border-indigo-200 dark:border-indigo-800">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                  <div>
+                    <span className="font-extrabold text-slate-900 dark:text-white block">
+                      Casual Room Setup
+                    </span>
+                    <span className="text-[10px] text-slate-400">
+                      Multiplayer rooms are skill-based and do not require any currency or wager stakes.
+                    </span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setEnableBetting((prev) => !prev)}
-                    className={`px-2.5 py-1 rounded-xl text-[10px] font-black cursor-pointer transition-all ${
-                      enableBetting
-                        ? 'bg-amber-500 text-white shadow-xs'
-                        : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
-                    }`}
-                  >
-                    {enableBetting ? '🔥 Betting ENABLED' : 'Casual (No Bet)'}
-                  </button>
                 </div>
-
-                {enableBetting && (
-                  <div className="space-y-2.5 pt-1 animate-fade-in">
-                    {/* Choose Currency */}
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between text-[11px]">
-                        <span className="font-bold text-slate-700 dark:text-slate-300">
-                          Select Currency (Room Lock):
-                        </span>
-                        <span className="text-slate-400">
-                          Your Balance:{' '}
-                          <strong className="text-slate-700 dark:text-slate-200">
-                            {formatCompactCurrency(userBalance)}
-                          </strong>
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-4 gap-1.5">
-                        {currencies.map((c) => {
-                          const meta = CURRENCY_CONFIG[c];
-                          const isSel = betCurrency === c;
-                          return (
-                            <button
-                              key={c}
-                              type="button"
-                              onClick={() => setBetCurrency(c)}
-                              className={`p-2 rounded-xl text-center border transition-all cursor-pointer ${
-                                isSel
-                                  ? `${meta.bgColor} ${meta.borderColor} ring-2 ring-indigo-500/30 shadow-xs`
-                                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
-                              }`}
-                            >
-                              <div className="text-sm">{meta.symbol}</div>
-                              <div className={`text-[10px] font-black truncate ${meta.textColor}`}>
-                                {meta.name}
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Quick Bet Presets */}
-                    <div className="space-y-1">
-                      <span className="font-bold text-slate-700 dark:text-slate-300 text-[11px]">
-                        Preset Bet Chips:
-                      </span>
-                      <div className="grid grid-cols-4 gap-1">
-                        {BET_PRESET_PACKAGES.slice(0, 4).map((pack) => (
-                          <button
-                            key={pack.label}
-                            type="button"
-                            onClick={() => setBetAmount(pack.amount)}
-                            className={`py-1 px-1.5 rounded-lg text-[10px] font-bold border transition-all cursor-pointer truncate ${
-                              betAmount === pack.amount
-                                ? 'bg-indigo-600 text-white border-indigo-600'
-                                : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-indigo-50'
-                            }`}
-                          >
-                            {pack.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Custom BigInt Bet Input */}
-                    <div className="space-y-1">
-                      <label className="font-bold text-slate-700 dark:text-slate-300 text-[11px] flex items-center justify-between">
-                        <span>Custom Bet Amount:</span>
-                        <span className="font-mono text-indigo-600 dark:text-indigo-400 font-bold">
-                          = {formatCompactCurrency(betAmount)} {CURRENCY_CONFIG[betCurrency].name}
-                        </span>
-                      </label>
-                      <input
-                        type="text"
-                        value={betAmount}
-                        onChange={(e) => setBetAmount(e.target.value.replace(/[^0-9]/g, ''))}
-                        placeholder="e.g. 1000000"
-                        className="w-full px-3 py-1.5 text-xs font-mono font-bold bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
-                      <p className="text-[9px] text-slate-400 truncate">
-                        Full: {formatFullCurrency(betAmount)}
-                      </p>
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* 4. Round Duration, Rounds & Player Limit */}

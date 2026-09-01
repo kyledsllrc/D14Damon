@@ -258,15 +258,32 @@ async function writeWithFirestoreFallback<T>(
   }
 }
 
+function buildStatsOnlyUserRecord(profile: UserProfile): Partial<UserProfile> {
+  const {
+    wallet,
+    lastNgipSalaryClaim,
+    unlockedBadges,
+    ...rest
+  } = profile;
+
+  return sanitizeForFirestore({
+    ...rest,
+    stats: profile.stats,
+    level: profile.level ?? 1,
+    xp: profile.xp ?? 0,
+    darkMode: typeof profile.darkMode === 'boolean' ? profile.darkMode : true,
+  }) as Partial<UserProfile>;
+}
+
 export async function saveProfileToFirestore(profile: UserProfile): Promise<void> {
   const db = getFirestoreDb();
   const fallbackDb = firebaseApp ? getFirestore(firebaseApp) : null;
   if (!db || !profile || !profile.id) return;
   try {
-    const cleanedProfile = sanitizeForFirestore(profile);
+    const userPayload = buildStatsOnlyUserRecord(profile);
     const userRef = doc(db, 'users', profile.id);
     await writeWithFirestoreFallback(async (activeDb) => {
-      await setDoc(doc(activeDb, 'users', profile.id), sanitizeForFirestore(cleanedProfile), { merge: true });
+      await setDoc(doc(activeDb, 'users', profile.id), userPayload, { merge: true });
     }, fallbackDb);
 
     const gamesPlayed = profile.stats?.gamesPlayed || 0;
@@ -503,21 +520,21 @@ export async function adminUpdateUserProfileInFirestore(userId: string, updates:
   const db = getFirestoreDb();
   if (!db || !userId) return;
   try {
+    const { wallet, lastNgipSalaryClaim, unlockedBadges, ...safeUpdates } = updates;
     const userRef = doc(db, 'users', userId);
-    await setDoc(userRef, sanitizeForFirestore(updates), { merge: true });
+    await setDoc(userRef, sanitizeForFirestore(safeUpdates), { merge: true });
 
-    // If username, avatar, score, level or isNgip changed, also mirror to leaderboard
+    // Keep Firestore limited to player records + leaderboard stats only.
     const leaderRef = doc(db, 'leaderboard', userId);
     const leaderUpdates: Record<string, unknown> = {
       updatedAt: new Date().toISOString(),
     };
-    if (updates.username !== undefined) leaderUpdates.username = updates.username;
-    if (updates.avatar !== undefined) leaderUpdates.avatar = updates.avatar;
-    if (updates.level !== undefined) leaderUpdates.level = updates.level;
-    if (updates.isNgip !== undefined) leaderUpdates.isNgip = updates.isNgip;
-    if (updates.wallet !== undefined) leaderUpdates.wallet = updates.wallet;
-    if (updates.stats?.totalScore !== undefined) leaderUpdates.score = updates.stats.totalScore;
-    if (updates.stats?.wins !== undefined) leaderUpdates.wins = updates.stats.wins;
+    if (safeUpdates.username !== undefined) leaderUpdates.username = safeUpdates.username;
+    if (safeUpdates.avatar !== undefined) leaderUpdates.avatar = safeUpdates.avatar;
+    if (safeUpdates.level !== undefined) leaderUpdates.level = safeUpdates.level;
+    if (safeUpdates.isNgip !== undefined) leaderUpdates.isNgip = safeUpdates.isNgip;
+    if (safeUpdates.stats?.totalScore !== undefined) leaderUpdates.score = safeUpdates.stats.totalScore;
+    if (safeUpdates.stats?.wins !== undefined) leaderUpdates.wins = safeUpdates.stats.wins;
 
     await setDoc(leaderRef, sanitizeForFirestore(leaderUpdates), { merge: true });
     console.log(`✅ Admin updated Firestore user [${userId}] successfully.`);

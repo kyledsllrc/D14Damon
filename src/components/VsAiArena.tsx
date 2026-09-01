@@ -14,24 +14,11 @@ import {
   Zap,
   ShieldCheck,
   Flame,
-  Coins,
   CheckCircle2,
   Sparkles,
   ChevronRight,
-  TrendingUp,
 } from 'lucide-react';
-import { ArcadeGameMode, CurrencyType } from '../types';
-import { useAuth } from '../context/AuthContext';
-import {
-  CURRENCY_CONFIG,
-  getWalletKey,
-  formatCompactCurrency,
-  formatFullCurrency,
-  BET_PRESET_PACKAGES,
-  toBigInt,
-  addCurrency,
-  mulCurrency,
-} from '../utils/currencyUtils';
+import { ArcadeGameMode } from '../types';
 import { soundManager } from '../utils/soundEffects';
 
 export type AiDifficulty = 'easy' | 'moderate' | 'hard' | 'extreme';
@@ -190,76 +177,21 @@ const DIFFICULTY_CONFIG: Record<
 };
 
 export const VsAiArena: React.FC<VsAiArenaProps> = ({ onLaunchGame }) => {
-  const { user, placeBet } = useAuth();
-
   const [selectedGame, setSelectedGame] = useState<ArcadeGameMode>('uno_party');
   const [selectedDifficulty, setSelectedDifficulty] = useState<AiDifficulty>('moderate');
-  const [withBet, setWithBet] = useState<boolean>(false);
-  const [betCurrency, setBetCurrency] = useState<CurrencyType>('diamond');
-  const [betAmount, setBetAmount] = useState<string>('100000'); // 100K default
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const currencies: CurrencyType[] = ['diamond', 'amethyst', 'jade', 'ruby'];
-  const userBalance = user?.wallet?.[getWalletKey(betCurrency)] || '0';
   const currentDiffMeta = DIFFICULTY_CONFIG[selectedDifficulty];
-
-  // Calculate potential payout with BigInt safety
-  const calculatePotentialWin = (): string => {
-    try {
-      const bi = toBigInt(betAmount);
-      if (bi <= 0n) return '0';
-      if (currentDiffMeta.multiplier === 1.0) return bi.toString();
-      if (currentDiffMeta.multiplier === 1.5) {
-        return ((bi * 15n) / 10n).toString();
-      }
-      if (currentDiffMeta.multiplier === 2.0) {
-        return (bi * 2n).toString();
-      }
-      if (currentDiffMeta.multiplier === 3.0) {
-        return (bi * 3n).toString();
-      }
-      return bi.toString();
-    } catch {
-      return '0';
-    }
-  };
 
   const handleLaunch = () => {
     setErrorMessage(null);
-
-    if (withBet) {
-      const betBi = toBigInt(betAmount);
-      const balBi = toBigInt(userBalance);
-
-      if (betBi <= 0n) {
-        setErrorMessage('Please enter a valid bet amount greater than 0.');
-        return;
-      }
-
-      if (balBi < betBi) {
-        setErrorMessage(
-          `Insufficient ${CURRENCY_CONFIG[betCurrency].name} balance! You have ${formatCompactCurrency(
-            userBalance
-          )}, but bet is ${formatCompactCurrency(betAmount)}.`
-        );
-        return;
-      }
-
-      // Deduct bet from player's balance
-      const success = placeBet(betCurrency, betAmount);
-      if (!success) {
-        setErrorMessage('Failed to place bet. Please check your currency balance.');
-        return;
-      }
-    }
-
     soundManager.playStartGame();
     onLaunchGame({
       mode: selectedGame,
       difficulty: selectedDifficulty,
-      withBet,
-      currency: betCurrency,
-      betAmount: withBet ? betAmount : '0',
+      withBet: false,
+      currency: 'diamond',
+      betAmount: '0',
       multiplier: currentDiffMeta.multiplier,
     });
   };
@@ -290,32 +222,11 @@ export const VsAiArena: React.FC<VsAiArenaProps> = ({ onLaunchGame }) => {
           </div>
         </div>
 
-        {/* Casual vs Bet Mode Switcher Pill */}
         <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700 shrink-0">
-          <button
-            type="button"
-            onClick={() => setWithBet(false)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
-              !withBet
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
-                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-            }`}
-          >
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs text-xs font-black">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-            <span>Casual (No Bet)</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setWithBet(true)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
-              withBet
-                ? 'bg-amber-500 text-white shadow-xs shadow-amber-500/30'
-                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-            }`}
-          >
-            <Flame className="w-3.5 h-3.5 fill-current" />
-            <span>🔥 Wager With Bet</span>
-          </button>
+            <span>Casual Practice</span>
+          </div>
         </div>
       </div>
 
@@ -436,101 +347,15 @@ export const VsAiArena: React.FC<VsAiArenaProps> = ({ onLaunchGame }) => {
             </div>
           </div>
 
-          {/* Betting Configuration if Enabled */}
-          {withBet ? (
-            <div className="p-3.5 bg-gradient-to-br from-amber-50/60 to-orange-50/30 dark:from-amber-950/30 dark:to-slate-900 rounded-2xl border border-amber-200 dark:border-amber-800/60 space-y-3 animate-fade-in">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <Coins className="w-4 h-4 text-amber-500" />
-                  <span className="text-xs font-black text-slate-900 dark:text-white">
-                    Wager Currency & Stakes
-                  </span>
-                </div>
-                <span className="text-[10px] font-bold text-slate-500">
-                  Balance:{' '}
-                  <strong className="text-slate-800 dark:text-slate-200">
-                    {formatCompactCurrency(userBalance)}
-                  </strong>
-                </span>
-              </div>
-
-              {/* Currency Selector */}
-              <div className="grid grid-cols-4 gap-1.5">
-                {currencies.map((c) => {
-                  const meta = CURRENCY_CONFIG[c];
-                  const isSel = betCurrency === c;
-                  return (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() => setBetCurrency(c)}
-                      className={`p-1.5 rounded-xl text-center border transition-all cursor-pointer ${
-                        isSel
-                          ? `${meta.bgColor} ${meta.borderColor} ring-2 ring-indigo-500/20 shadow-xs`
-                          : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
-                      }`}
-                    >
-                      <div className="text-xs">{meta.symbol}</div>
-                      <div className={`text-[10px] font-black truncate ${meta.textColor}`}>
-                        {meta.name}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Preset Chips */}
-              <div className="grid grid-cols-4 gap-1">
-                {BET_PRESET_PACKAGES.slice(0, 4).map((pack) => (
-                  <button
-                    key={pack.label}
-                    type="button"
-                    onClick={() => setBetAmount(pack.amount)}
-                    className={`py-1 px-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer text-center truncate ${
-                      betAmount === pack.amount
-                        ? 'bg-amber-600 text-white border-amber-600'
-                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
-                    }`}
-                  >
-                    {pack.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Custom Input */}
-              <div className="space-y-1">
-                <input
-                  type="text"
-                  value={betAmount}
-                  onChange={(e) => setBetAmount(e.target.value.replace(/[^0-9]/g, ''))}
-                  placeholder="Bet amount..."
-                  className="w-full px-3 py-1.5 text-xs font-mono font-bold bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                />
-              </div>
-
-              {/* Payout Summary */}
-              <div className="p-2 rounded-xl bg-amber-100/60 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800/80 flex items-center justify-between text-xs font-bold text-amber-900 dark:text-amber-200">
-                <div className="flex items-center gap-1.5">
-                  <TrendingUp className="w-3.5 h-3.5 text-amber-600" />
-                  <span>Potential Win:</span>
-                </div>
-                <span className="font-mono text-xs font-black">
-                  +{formatCompactCurrency(calculatePotentialWin())} {CURRENCY_CONFIG[betCurrency].name}
-                </span>
-              </div>
+          <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-1.5">
+            <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-800 dark:text-slate-200">
+              <ShieldCheck className="w-4 h-4 text-emerald-500" />
+              <span>Casual Practice Mode</span>
             </div>
-          ) : (
-            /* Casual Info Card */
-            <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-1.5">
-              <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-800 dark:text-slate-200">
-                <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                <span>Casual Practice Mode (No Currency At Stake)</span>
-              </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                Play without risking gems to test strategies, hone your speed, and earn player XP & leaderboard score!
-              </p>
-            </div>
-          )}
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              Play for skill, XP, and leaderboard progress with no currency or wager system involved.
+            </p>
+          </div>
 
           {/* Error message */}
           {errorMessage && (
