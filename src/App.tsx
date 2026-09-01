@@ -132,7 +132,6 @@ const MainGameContainer: React.FC<{
         onOpenAuth={onOpenAuth}
         onOpenAuthGate={onOpenAuthGate}
         onOpenAdmin={onOpenAdmin}
-        onOpenDailyMissions={onOpenDailyMissions}
       />
 
       {/* Main Game Screen depending on selected mode */}
