@@ -15,6 +15,9 @@ type Board = BoardCell[][];
 type Move = { from: string; to: string; captured?: boolean };
 
 const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+const PLAYER_COLOR: PieceColor = 'b';
+const ENEMY_COLOR: PieceColor = 'w';
+
 const PIECE_SYMBOLS: Record<string, string> = {
   wp: '♙',
   wn: '♘',
@@ -35,13 +38,13 @@ const getInitialBoard = (): Board => {
 
   const setupBackRank: PieceType[] = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'];
   setupBackRank.forEach((type, col) => {
-    board[0][col] = { type, color: 'b' };
-    board[7][col] = { type, color: 'w' };
+    board[0][col] = { type, color: PLAYER_COLOR };
+    board[7][col] = { type, color: ENEMY_COLOR };
   });
 
   for (let col = 0; col < 8; col += 1) {
-    board[1][col] = { type: 'p', color: 'b' };
-    board[6][col] = { type: 'p', color: 'w' };
+    board[1][col] = { type: 'p', color: PLAYER_COLOR };
+    board[6][col] = { type: 'p', color: ENEMY_COLOR };
   }
 
   return board;
@@ -168,9 +171,9 @@ const getAvailableMoves = (board: Board, color: PieceColor) => {
 
 export const ChessGame: React.FC<{ onBackToHub: () => void; aiConfig?: AiGameConfig | null }> = ({ onBackToHub, aiConfig }) => {
   const [board, setBoard] = useState<Board>(() => getInitialBoard());
-  const [turn, setTurn] = useState<PieceColor>('w');
+  const [turn, setTurn] = useState<PieceColor>(PLAYER_COLOR);
   const [selected, setSelected] = useState<string | null>(null);
-  const [status, setStatus] = useState('White to move');
+  const [status, setStatus] = useState(`${PLAYER_COLOR === 'w' ? 'White' : 'Black'} to move`);
 
   const legalMoves = useMemo(() => {
     if (!selected) return [];
@@ -200,11 +203,11 @@ export const ChessGame: React.FC<{ onBackToHub: () => void; aiConfig?: AiGameCon
           nextBoard[targetCoords.row][targetCoords.col] = { type: 'q', color: movingPiece.color };
         }
 
-        const nextTurn: PieceColor = turn === 'w' ? 'b' : 'w';
+        const nextTurn: PieceColor = turn === PLAYER_COLOR ? ENEMY_COLOR : PLAYER_COLOR;
         setBoard(nextBoard);
         setSelected(null);
         setTurn(nextTurn);
-        setStatus(`${nextTurn === 'w' ? 'White' : 'Black'} to move`);
+        setStatus(`${nextTurn === PLAYER_COLOR ? 'Black' : 'White'} to move`);
         return;
       }
 
@@ -225,13 +228,13 @@ export const ChessGame: React.FC<{ onBackToHub: () => void; aiConfig?: AiGameCon
   const handleReset = () => {
     setBoard(getInitialBoard());
     setSelected(null);
-    setTurn('w');
-    setStatus('White to move');
+    setTurn(PLAYER_COLOR);
+    setStatus(`${PLAYER_COLOR === 'w' ? 'White' : 'Black'} to move`);
   };
 
   const aiMove = () => {
-    if (!aiConfig || turn !== 'b') return;
-    const moves = getAvailableMoves(board, 'b');
+    if (!aiConfig || turn !== ENEMY_COLOR) return;
+    const moves = getAvailableMoves(board, ENEMY_COLOR);
     if (moves.length === 0) {
       setStatus('No legal moves for AI');
       return;
@@ -248,12 +251,12 @@ export const ChessGame: React.FC<{ onBackToHub: () => void; aiConfig?: AiGameCon
     nextBoard[from.row][from.col] = null;
 
     setBoard(nextBoard);
-    setTurn('w');
-    setStatus('White to move');
+    setTurn(PLAYER_COLOR);
+    setStatus(`${PLAYER_COLOR === 'w' ? 'White' : 'Black'} to move`);
   };
 
   React.useEffect(() => {
-    if (aiConfig && turn === 'b') {
+    if (aiConfig && turn === ENEMY_COLOR) {
       const timer = window.setTimeout(aiMove, 450);
       return () => window.clearTimeout(timer);
     }
@@ -302,6 +305,16 @@ export const ChessGame: React.FC<{ onBackToHub: () => void; aiConfig?: AiGameCon
 
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_220px] gap-4">
         <div className="rounded-[28px] border border-slate-700 bg-[#0f172a] p-3 shadow-[0_16px_40px_rgba(15,23,42,0.35)]">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 rounded-full border border-slate-600 bg-slate-900/80 px-3 py-1.5 text-[11px] font-black text-slate-200">
+              <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-slate-200 text-slate-900">♟</span>
+              You: Black
+            </div>
+            <div className="flex items-center gap-2 rounded-full border border-slate-600 bg-slate-900/80 px-3 py-1.5 text-[11px] font-black text-slate-200">
+              <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-slate-900 text-slate-100 ring-1 ring-slate-600">♔</span>
+              Opponent: White
+            </div>
+          </div>
           <div className="mx-auto max-w-[720px] aspect-square overflow-hidden rounded-[22px] border border-slate-600 bg-slate-950 shadow-inner">
             <div className="grid grid-cols-8 h-full w-full">
               {boardSquares.flat().map(({ sq, cell, isSelected, isLegal, isDark }) => (

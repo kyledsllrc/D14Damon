@@ -18,7 +18,6 @@ import { useAuth } from '../../context/AuthContext';
 import { soundManager } from '../../utils/soundEffects';
 import { isValidEnglishWord } from '../../utils/dictionary';
 import { AiGameConfig } from '../VsAiArena';
-import { VsBotWagerBanner, VsBotPayoutModal } from '../VsBotWagerManager';
 
 interface AnagramPuzzle {
   word: string;
@@ -88,9 +87,6 @@ export const AnagramRush: React.FC<AnagramRushProps> = ({ onBackToHub, aiConfig 
   const [solvedCount, setSolvedCount] = useState(0);
   const [feedback, setFeedback] = useState<{ text: string; isError: boolean } | null>(null);
 
-  // Wager modal
-  const [showWagerModal, setShowWagerModal] = useState(false);
-  const [wagerWon, setWagerWon] = useState(false);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const currentPuzzle = puzzles[currentIndex];
@@ -238,17 +234,10 @@ export const AnagramRush: React.FC<AnagramRushProps> = ({ onBackToHub, aiConfig 
       isWin
     );
 
-    if (aiConfig?.withBet) {
-      setWagerWon(isWin);
-      setShowWagerModal(true);
-    }
   };
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-4 animate-fade-in font-sans select-none">
-      {/* VS BOT Active Wager Bar */}
-      <VsBotWagerBanner aiConfig={aiConfig} gameTitle="Word Anagram Scramble" />
-
       {/* Header */}
       <div className="flex items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
         <button
@@ -528,18 +517,6 @@ export const AnagramRush: React.FC<AnagramRushProps> = ({ onBackToHub, aiConfig 
         </motion.div>
       )}
 
-      {/* VS BOT Wager Payout / Rematch Modal */}
-      <VsBotPayoutModal
-        isOpen={showWagerModal}
-        won={wagerWon}
-        aiConfig={aiConfig}
-        gameTitle="Word Anagram Scramble"
-        onRematch={() => {
-          setShowWagerModal(false);
-          handleStartGame();
-        }}
-        onBackToHub={onBackToHub}
-      />
     </div>
   );
 };

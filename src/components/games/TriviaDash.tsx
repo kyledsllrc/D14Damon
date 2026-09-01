@@ -22,7 +22,6 @@ import { useGame } from '../../context/GameContext';
 import { soundManager } from '../../utils/soundEffects';
 import { getSocket } from '../../services/socket';
 import { AiGameConfig } from '../VsAiArena';
-import { VsBotWagerBanner, VsBotPayoutModal } from '../VsBotWagerManager';
 
 interface TriviaQuestion {
   id: string;
@@ -254,9 +253,6 @@ export const TriviaDash: React.FC<TriviaDashProps> = ({ onBackToHub, aiConfig = 
   const [mpTotalQuestions, setMpTotalQuestions] = useState(8);
   const [mpWinner, setMpWinner] = useState<{ id: string; name: string; avatar: string; score: number } | null>(null);
 
-  // Wager modal
-  const [showWagerModal, setShowWagerModal] = useState(false);
-  const [wagerWon, setWagerWon] = useState(false);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -469,17 +465,10 @@ export const TriviaDash: React.FC<TriviaDashProps> = ({ onBackToHub, aiConfig = 
       isWin
     );
 
-    if (aiConfig?.withBet) {
-      setWagerWon(isWin);
-      setShowWagerModal(true);
-    }
   };
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-4 animate-fade-in font-sans select-none">
-      {/* VS BOT Active Wager Bar */}
-      <VsBotWagerBanner aiConfig={aiConfig} gameTitle="Trivia Dash Royale" />
-
       {/* Top Header */}
       <div className="flex items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
         <button
@@ -834,18 +823,6 @@ export const TriviaDash: React.FC<TriviaDashProps> = ({ onBackToHub, aiConfig = 
         </motion.div>
       )}
 
-      {/* VS BOT Wager Payout / Rematch Modal */}
-      <VsBotPayoutModal
-        isOpen={showWagerModal}
-        won={wagerWon}
-        aiConfig={aiConfig}
-        gameTitle="Trivia Dash Royale"
-        onRematch={() => {
-          setShowWagerModal(false);
-          handleStartGame();
-        }}
-        onBackToHub={onBackToHub}
-      />
     </div>
   );
 };

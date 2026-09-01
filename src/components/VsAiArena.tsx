@@ -18,7 +18,7 @@ import {
   Sparkles,
   ChevronRight,
 } from 'lucide-react';
-import { ArcadeGameMode } from '../types';
+import { ArcadeGameMode, CurrencyType } from '../types';
 import { soundManager } from '../utils/soundEffects';
 
 export type AiDifficulty = 'easy' | 'moderate' | 'hard' | 'extreme';
@@ -200,115 +200,97 @@ export const VsAiArena: React.FC<VsAiArenaProps> = ({ onLaunchGame }) => {
   const ActiveGameIcon = activeGameObj.icon;
 
   return (
-    <section className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 sm:p-6 space-y-6">
-      {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center shadow-sm shrink-0">
-            <Bot className="w-5 h-5" />
+    <section className="bg-gradient-to-br from-white via-slate-50 to-slate-100 dark:from-slate-900 dark:via-slate-900/95 dark:to-slate-800 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-lg p-6 sm:p-8 space-y-8">
+      {/* Professional Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center shadow-lg">
+            <Bot className="w-7 h-7" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
-                VS AI Arcade Arena
-              </h2>
-              <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
-                Solo & Bot Challenges
-              </span>
-            </div>
-            <p className="text-xs text-slate-500">
-              Select game, difficulty, and choose Casual play or Wager bets with multiplied rewards!
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+              AI Challenge Arena
+            </h2>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+              Test your skills against intelligent AI opponents
             </p>
           </div>
         </div>
-
-        <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700 shrink-0">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs text-xs font-black">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-            <span>Casual Practice</span>
+        <div className="flex-shrink-0 px-4 py-2.5 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 rounded-2xl">
+          <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
+            <ShieldCheck className="w-5 h-5" />
+            <span className="font-bold text-sm">Practice Mode</span>
           </div>
         </div>
       </div>
 
-      {/* Grid: Left Game Selector, Right Difficulty & Bet Panel */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left 7 Columns: Game Selection Cards */}
-        <div className="lg:col-span-7 space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">
-              1. Choose Game Arena ({AI_GAMES.length} Modes)
-            </span>
-            <span className="text-xs text-indigo-600 dark:text-indigo-400 font-bold">
-              Selected: {activeGameObj.name}
-            </span>
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left: Game Selection */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="space-y-2">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+              Choose Your Game
+            </h3>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Select from {AI_GAMES.length} games • Currently: <span className="font-semibold text-indigo-600 dark:text-indigo-400">{activeGameObj.name}</span>
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[380px] overflow-y-auto pr-1">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[450px] overflow-y-auto pr-2">
             {AI_GAMES.map((game) => {
               const Icon = game.icon;
               const isSelected = selectedGame === game.id;
               return (
-                <div
+                <button
                   key={game.id}
+                  type="button"
                   onClick={() => {
                     soundManager.playTick();
                     setSelectedGame(game.id);
                   }}
-                  className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-start gap-3 select-none ${
+                  className={`relative p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col items-center justify-center text-center group ${
                     isSelected
-                      ? 'bg-indigo-50/80 dark:bg-indigo-950/60 border-indigo-500 ring-2 ring-indigo-500/20 shadow-xs'
-                      : 'bg-slate-50/60 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 hover:bg-slate-100/80 dark:hover:bg-slate-800'
+                      ? 'bg-gradient-to-br from-indigo-500 to-indigo-600 border-indigo-600 shadow-lg shadow-indigo-500/30'
+                      : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-indigo-500'
                   }`}
                 >
                   <div
-                    className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all ${
-                      isSelected
-                        ? 'bg-indigo-600 text-white shadow-xs'
-                        : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                    className={`text-3xl mb-2 transition-transform group-hover:scale-110 ${
+                      isSelected ? 'scale-110' : ''
                     }`}
                   >
-                    <Icon className="w-5 h-5" />
+                    <Icon className={`w-6 h-6 ${
+                      isSelected ? 'text-white' : 'text-slate-600 dark:text-slate-300'
+                    }`} />
                   </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-1 mb-0.5">
-                      <h4
-                        className={`text-xs font-black truncate ${
-                          isSelected
-                            ? 'text-indigo-900 dark:text-indigo-200'
-                            : 'text-slate-800 dark:text-slate-200'
-                        }`}
-                      >
-                        {game.name}
-                      </h4>
-                      {isSelected && (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
-                      )}
-                    </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 leading-tight">
-                      {game.tagline}
-                    </p>
-                  </div>
-                </div>
+                  <h4 className={`text-xs font-black leading-tight ${
+                    isSelected
+                      ? 'text-white'
+                      : 'text-slate-800 dark:text-slate-200'
+                  }`}>
+                    {game.name}
+                  </h4>
+                </button>
               );
             })}
           </div>
         </div>
 
-        {/* Right 5 Columns: Difficulty & Bet Stakes Panel */}
-        <div className="lg:col-span-5 space-y-4 flex flex-col justify-between">
+        {/* Right: Difficulty & Launch */}
+        <div className="lg:col-span-1 flex flex-col gap-6">
           {/* Difficulty Selection */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">
-                2. Select Difficulty & AI Speed
-              </span>
-              <span className="text-xs font-black text-purple-600 dark:text-purple-400">
-                {currentDiffMeta.multiplierText}
-              </span>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                Difficulty Level
+              </h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                {currentDiffMeta.label}
+              </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-2">
               {(['easy', 'moderate', 'hard', 'extreme'] as AiDifficulty[]).map((diff) => {
                 const meta = DIFFICULTY_CONFIG[diff];
                 const isSelected = selectedDifficulty === diff;
@@ -320,46 +302,40 @@ export const VsAiArena: React.FC<VsAiArenaProps> = ({ onLaunchGame }) => {
                       soundManager.playTick();
                       setSelectedDifficulty(diff);
                     }}
-                    className={`p-2.5 rounded-2xl border text-left transition-all cursor-pointer ${
+                    className={`p-3 rounded-xl border-2 transition-all cursor-pointer text-center ${
                       isSelected
-                        ? `${meta.badgeBg} ${meta.borderColor} ring-2 ring-indigo-500/20 shadow-xs`
-                        : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        ? `${meta.badgeBg} ${meta.borderColor} shadow-lg`
+                        : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm">{meta.icon}</span>
-                      <span className={`text-[10px] font-black ${meta.textColor}`}>
-                        {meta.multiplierText}
-                      </span>
-                    </div>
-                    <div className="font-extrabold text-xs text-slate-900 dark:text-white">
+                    <div className="text-lg mb-1">{meta.icon}</div>
+                    <div className={`text-xs font-bold ${
+                      isSelected
+                        ? `${meta.textColor}`
+                        : 'text-slate-700 dark:text-slate-300'
+                    }`}>
                       {meta.label}
                     </div>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight truncate mt-0.5">
-                      {diff === 'easy' && 'Casual practice'}
-                      {diff === 'moderate' && 'Standard speed'}
-                      {diff === 'hard' && 'Fast accuracy'}
-                      {diff === 'extreme' && 'Superhuman AI'}
-                    </p>
                   </button>
                 );
               })}
             </div>
           </div>
 
-          <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-1.5">
-            <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-800 dark:text-slate-200">
-              <ShieldCheck className="w-4 h-4 text-emerald-500" />
-              <span>Casual Practice Mode</span>
+          {/* Info Card */}
+          <div className="p-4 bg-indigo-50 dark:bg-indigo-950/30 rounded-2xl border border-indigo-200 dark:border-indigo-800/50 space-y-2">
+            <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300">
+              <Sparkles className="w-5 h-5" />
+              <span className="font-bold text-sm">{currentDiffMeta.label}</span>
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              Play for skill, XP, and leaderboard progress with no currency or wager system involved.
+            <p className="text-xs text-indigo-600 dark:text-indigo-400 leading-relaxed">
+              {currentDiffMeta.description}
             </p>
           </div>
 
           {/* Error message */}
           {errorMessage && (
-            <p className="text-xs font-bold text-rose-600 dark:text-rose-400 p-2 bg-rose-50 dark:bg-rose-950/60 rounded-xl border border-rose-200 dark:border-rose-800">
+            <p className="text-xs font-bold text-rose-600 dark:text-rose-400 p-3 bg-rose-50 dark:bg-rose-950/40 rounded-xl border border-rose-200 dark:border-rose-800">
               {errorMessage}
             </p>
           )}
@@ -368,11 +344,11 @@ export const VsAiArena: React.FC<VsAiArenaProps> = ({ onLaunchGame }) => {
           <button
             type="button"
             onClick={handleLaunch}
-            className="w-full py-3.5 px-4 rounded-2xl font-black text-xs sm:text-sm text-white bg-gradient-to-r from-purple-600 via-indigo-600 to-violet-600 hover:from-purple-700 hover:to-indigo-700 shadow-md shadow-indigo-600/25 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-98"
+            className="w-full py-4 px-4 rounded-2xl font-black text-sm text-white bg-gradient-to-r from-purple-600 via-indigo-600 to-violet-600 hover:from-purple-700 hover:via-indigo-700 hover:to-violet-700 shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95"
           >
-            <ActiveGameIcon className="w-4 h-4 fill-current" />
-            <span>Launch Battle VS AI: {activeGameObj.name}</span>
-            <ChevronRight className="w-4 h-4" />
+            <ActiveGameIcon className="w-5 h-5" />
+            <span>Start Challenge</span>
+            <ChevronRight className="w-5 h-5" />
           </button>
         </div>
       </div>

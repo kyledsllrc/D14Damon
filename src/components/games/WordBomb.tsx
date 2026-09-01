@@ -23,7 +23,6 @@ import { useGame } from '../../context/GameContext';
 import { soundManager } from '../../utils/soundEffects';
 import { isValidEnglishWord, SYLLABLE_PROMPTS, SyllablePromptConfig } from '../../utils/dictionary';
 import { AiGameConfig } from '../VsAiArena';
-import { VsBotWagerBanner, VsBotPayoutModal } from '../VsBotWagerManager';
 import { getSocket } from '../../services/socket';
 
 interface WordBombProps {
@@ -52,9 +51,6 @@ export const WordBomb: React.FC<WordBombProps> = ({ onBackToHub, aiConfig = null
   const [botTurn, setBotTurn] = useState(false);
   const [botThinkingText, setBotThinkingText] = useState('');
 
-  // Wager modal
-  const [showWagerModal, setShowWagerModal] = useState(false);
-  const [wagerWon, setWagerWon] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -239,10 +235,6 @@ export const WordBomb: React.FC<WordBombProps> = ({ onBackToHub, aiConfig = null
         });
       }
 
-      if (aiConfig?.withBet) {
-        setWagerWon(isWin);
-        setShowWagerModal(true);
-      }
     } else {
       // Emit explosion event in multiplayer
       if (isMultiplayerRoom) {
@@ -363,9 +355,6 @@ export const WordBomb: React.FC<WordBombProps> = ({ onBackToHub, aiConfig = null
         shakeScreen ? 'animate-bounce' : ''
       }`}
     >
-      {/* VS BOT Active Wager Bar */}
-      <VsBotWagerBanner aiConfig={aiConfig} gameTitle="Word Bomb Chain" />
-
       {/* Top Bar Header */}
       <div className="flex items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
         <button
@@ -822,18 +811,6 @@ export const WordBomb: React.FC<WordBombProps> = ({ onBackToHub, aiConfig = null
         </motion.div>
       )}
 
-      {/* VS BOT Wager Payout / Rematch Modal */}
-      <VsBotPayoutModal
-        isOpen={showWagerModal}
-        won={wagerWon}
-        aiConfig={aiConfig}
-        gameTitle="Word Bomb Chain"
-        onRematch={() => {
-          setShowWagerModal(false);
-          handleStartGame(isMultiplayerRoom ? false : botOpponent);
-        }}
-        onBackToHub={onBackToHub}
-      />
     </div>
   );
 };

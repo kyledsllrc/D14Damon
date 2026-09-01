@@ -11,7 +11,6 @@ import {
   Shield,
   Zap,
   Pencil,
-  Coins,
   Volume2,
   VolumeX,
   ArrowLeft,
@@ -334,38 +333,7 @@ export const ProfileModal: React.FC<{
             </button>
           </div>
 
-          {/* GW Currencies Wallet Showcase */}
-          <div className="space-y-2">
-            <p className="text-xs font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-              <Coins className="w-3.5 h-3.5 text-amber-500" />
-              <span>GW Balance</span>
-            </p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {currencies.map((c) => {
-                const meta = CURRENCY_CONFIG[c];
-                const val = wallet[getWalletKey(c)];
-                return (
-                  <div
-                    key={c}
-                    className={`p-2.5 rounded-2xl border ${meta.bgColor} ${meta.borderColor}`}
-                  >
-                    <div className="flex items-center justify-between text-xs mb-0.5">
-                      <span className="text-sm">{meta.symbol}</span>
-                      <span className="text-[10px] font-bold uppercase text-slate-400">{meta.name}</span>
-                    </div>
-                    <div className={`text-xs font-black truncate ${meta.textColor}`}>
-                      {formatCompactCurrency(val)}
-                    </div>
-                    <div className="text-[9px] text-slate-400 truncate mt-0.5" title={formatFullCurrency(val)}>
-                      {formatFullCurrency(val)}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* 👑 VIP งip 100K Daily Salary (24-Hour Cooldown) Section */}
+          {/* 👑 VIP งip 100K Daily Salary (24-Hour Cooldown) Section - ONLY FOR ADMIN */}
           {isNgip && (
             <div className="p-4 bg-gradient-to-r from-amber-500/15 via-purple-500/15 to-pink-500/15 dark:from-amber-950/60 dark:via-purple-950/60 dark:to-pink-950/60 rounded-2xl border-2 border-amber-400 dark:border-amber-500/70 space-y-2.5 shadow-md">
               <div className="flex items-center justify-between">
@@ -640,7 +608,7 @@ export const ProfileModal: React.FC<{
             </div>
           </div>
 
-          {/* Logout / Switch User */}
+          {/* Logout */}
           <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
             <button
               onClick={() => {
@@ -650,7 +618,7 @@ export const ProfileModal: React.FC<{
               className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800 flex items-center justify-center gap-2 transition-all cursor-pointer"
             >
               <LogOut className="w-4 h-4" />
-              <span>Reset / Switch Player</span>
+              <span>Logout</span>
             </button>
           </div>
         </div>

@@ -14,7 +14,7 @@ import { GameOverModal } from './components/GameOverModal';
 import { GlobalLeaderboard } from './components/GlobalLeaderboard';
 import { ProfileModal } from './components/ProfileModal';
 import { AuthModal } from './components/AuthModal';
-import { DailyMissionsModal } from './components/DailyMissionsModal';
+
 import { SettingsModal } from './components/SettingsModal';
 import { WelcomeAuthGate } from './components/WelcomeAuthGate';
 import { AdminPanel } from './components/AdminPanel';
@@ -48,7 +48,7 @@ const MainGameContainer: React.FC<{
   onOpenAuth: () => void;
   onOpenAuthGate: () => void;
   onOpenAdmin: () => void;
-  onOpenDailyMissions: () => void;
+
 }> = ({
   currentMode,
   setCurrentMode,
@@ -58,7 +58,7 @@ const MainGameContainer: React.FC<{
   onOpenAuth,
   onOpenAuthGate,
   onOpenAdmin,
-  onOpenDailyMissions,
+
 }) => {
   const { gameState, leaveRoom } = useGame();
   const [mobileTab, setMobileTab] = useState<'game' | 'chat' | 'scores'>('game');
@@ -518,7 +518,6 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
-  const [showDailyMissions, setShowDailyMissions] = useState(false);
 
   return (
     <AuthProvider>
@@ -552,17 +551,14 @@ export default function App() {
                 onOpenAuth={() => setShowAuth(true)}
                 onOpenAuthGate={() => setHasEnteredApp(false)}
                 onOpenAdmin={() => setShowAdmin(true)}
-                onOpenDailyMissions={() => setShowDailyMissions(true)}
+
               />
             </motion.div>
           )}
         </AnimatePresence>
 
         {/* Global Modals */}
-        <DailyMissionsModal
-          isOpen={showDailyMissions}
-          onClose={() => setShowDailyMissions(false)}
-        />
+
         <GlobalLeaderboard
           isOpen={showLeaderboard}
           onClose={() => setShowLeaderboard(false)}
