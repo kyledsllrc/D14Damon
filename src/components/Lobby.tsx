@@ -39,6 +39,7 @@ import {
   CurrencyType,
   BettingConfig,
   RoomSummary,
+  UnoTeamMode,
 } from '../types';
 import { useGame } from '../context/GameContext';
 import { useAuth } from '../context/AuthContext';
@@ -198,6 +199,7 @@ export const Lobby: React.FC<LobbyProps> = ({
 
   // Create Room State Form
   const [selectedGameMode, setSelectedGameMode] = useState<ArcadeGameMode>('multiplayer_draw');
+  const [unoTeamMode, setUnoTeamMode] = useState<UnoTeamMode>('ffa');
   const [roomName, setRoomName] = useState('');
   const [roundDuration, setRoundDuration] = useState<number>(60);
   const [maxRounds, setMaxRounds] = useState<number>(3);
@@ -328,6 +330,7 @@ export const Lobby: React.FC<LobbyProps> = ({
       allowHints,
       botPlayersEnabled: false,
       gameMode: selectedGameMode,
+      unoTeamMode: selectedGameMode === 'uno_party' ? unoTeamMode : undefined,
       betting: bettingConfig,
     };
 
@@ -368,41 +371,43 @@ export const Lobby: React.FC<LobbyProps> = ({
       {/* ========================================================================= */}
       {/* 1. MATCHMAKING & ROOM ACTIONS (JOIN CODE / QUICK MATCH / CREATE ROOM)     */}
       {/* ========================================================================= */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-stretch">
         {/* Left Col: Join Room with Code + Quick Match & Create Room */}
-        <div className="lg:col-span-7 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 sm:p-6 space-y-4">
-          <div>
-            <h3 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-              <Hash className="w-4 h-4 text-indigo-600" />
-              <span>Join via Room Code</span>
-            </h3>
-            <p className="text-xs text-slate-500">
-              Entering a private game or direct room? Enter the 5 or 6-character room code below.
-            </p>
+        <div className="lg:col-span-5 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 sm:p-6 space-y-4 flex flex-col justify-between">
+          <div className="space-y-3">
+            <div>
+              <h3 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                <Hash className="w-4 h-4 text-indigo-600" />
+                <span>Join via Room Code</span>
+              </h3>
+              <p className="text-xs text-slate-500">
+                Entering a private game or direct room? Enter the room code below.
+              </p>
+            </div>
+
+            <form onSubmit={handleJoinWithCode} className="flex gap-2">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  placeholder="ROOM CODE (e.g. AB12CD)"
+                  value={roomCodeInput}
+                  onChange={(e) => setRoomCodeInput(e.target.value.toUpperCase())}
+                  maxLength={8}
+                  className="w-full pl-3 pr-3 py-2.5 text-xs font-mono font-bold tracking-widest uppercase bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white rounded-2xl border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={!roomCodeInput.trim()}
+                className="px-4 sm:px-5 py-2.5 rounded-2xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-xs shrink-0 cursor-pointer"
+              >
+                Enter
+              </button>
+            </form>
           </div>
 
-          <form onSubmit={handleJoinWithCode} className="flex gap-2">
-            <div className="relative flex-1">
-              <input
-                type="text"
-                placeholder="ROOM CODE (e.g. AB12CD)"
-                value={roomCodeInput}
-                onChange={(e) => setRoomCodeInput(e.target.value.toUpperCase())}
-                maxLength={8}
-                className="w-full pl-3 pr-3 py-2.5 text-xs font-mono font-bold tracking-widest uppercase bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white rounded-2xl border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={!roomCodeInput.trim()}
-              className="px-5 py-2.5 rounded-2xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-xs shrink-0 cursor-pointer"
-            >
-              Enter Room
-            </button>
-          </form>
-
           {/* Quick Match & Create Room Buttons */}
-          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
             <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
               Matchmaking & Arena Creation
             </span>
@@ -410,10 +415,10 @@ export const Lobby: React.FC<LobbyProps> = ({
               <button
                 type="button"
                 onClick={quickJoin}
-                className="w-full py-3 px-4 rounded-2xl text-xs font-extrabold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-98"
+                className="w-full py-3 px-3 rounded-2xl text-xs font-extrabold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 shadow-md shadow-indigo-600/20 flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-98"
               >
-                <Play className="w-4 h-4 fill-current" />
-                <span>Quick Match Now</span>
+                <Play className="w-4 h-4 fill-current shrink-0" />
+                <span className="truncate">Quick Match</span>
               </button>
 
               <button
@@ -423,10 +428,10 @@ export const Lobby: React.FC<LobbyProps> = ({
                   setIsPrivate(false);
                   setShowCreateModal(true);
                 }}
-                className="w-full py-3 px-4 rounded-2xl text-xs font-extrabold text-indigo-700 dark:text-indigo-300 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/70 dark:hover:bg-indigo-900/80 border border-indigo-200 dark:border-indigo-800 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-98"
+                className="w-full py-3 px-3 rounded-2xl text-xs font-extrabold text-indigo-700 dark:text-indigo-300 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/70 dark:hover:bg-indigo-900/80 border border-indigo-200 dark:border-indigo-800 flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-98"
               >
-                <PlusCircle className="w-4 h-4" />
-                <span>Create Custom Room & Bets</span>
+                <PlusCircle className="w-4 h-4 shrink-0" />
+                <span className="truncate">Create Room</span>
               </button>
             </div>
           </div>
@@ -646,6 +651,53 @@ export const Lobby: React.FC<LobbyProps> = ({
                   })}
                 </div>
               </div>
+
+              {/* UNO Party Team Mode Selector (when UNO is selected) */}
+              {selectedGameMode === 'uno_party' && (
+                <div className="p-3.5 bg-rose-50/80 dark:bg-rose-950/40 rounded-2xl border border-rose-200 dark:border-rose-800/80 space-y-2.5 animate-fade-in">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                      <span>UNO Party Team Battle Mode</span>
+                    </label>
+                    <span className="text-[10px] font-mono font-black uppercase text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-900/60 px-2 py-0.5 rounded-md border border-rose-300 dark:border-rose-700">
+                      {unoTeamMode === 'ffa' ? 'Solo FFA' : unoTeamMode.toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {[
+                      { id: 'ffa', label: 'FFA (Solo)', count: 4 },
+                      { id: '2v2', label: '2 vs 2', count: 4 },
+                      { id: '3v3', label: '3 vs 3', count: 6 },
+                      { id: '4v4', label: '4 vs 4', count: 8 },
+                      { id: '5v5', label: '5 vs 5', count: 10 },
+                    ].map((mode) => (
+                      <button
+                        type="button"
+                        key={mode.id}
+                        onClick={() => {
+                          setUnoTeamMode(mode.id as UnoTeamMode);
+                          if (mode.id !== 'ffa') {
+                            setMaxPlayers(mode.count);
+                          }
+                        }}
+                        className={`py-2 px-1 rounded-xl text-center font-bold border transition-all cursor-pointer text-[11px] ${
+                          unoTeamMode === mode.id
+                            ? 'bg-rose-600 text-white border-rose-600 shadow-sm shadow-rose-600/30'
+                            : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-rose-400'
+                        }`}
+                      >
+                        {mode.label}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-slate-600 dark:text-slate-400 leading-snug">
+                    {unoTeamMode === 'ffa'
+                      ? 'Free For All: Every player plays for themselves in standard UNO rules.'
+                      : `Team Mode (${unoTeamMode.toUpperCase()}): Red Team 🔴 vs Blue Team 🔵! Alternating seats — when any teammate plays their last card, your whole team wins!`}
+                  </p>
+                </div>
+              )}
 
               {/* 2. Room Name */}
               <div className="space-y-1">

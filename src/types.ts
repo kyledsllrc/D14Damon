@@ -97,8 +97,12 @@ export interface Player {
   isNgip?: boolean;
 }
 
+export type UnoTeamMode = 'ffa' | '2v2' | '3v3' | '4v4' | '5v5';
+export type UnoTeam = 'red' | 'blue';
+
 export interface RoomSettings {
   gameMode?: ArcadeGameMode;
+  unoTeamMode?: UnoTeamMode;
   roundDuration: number; // 30, 45, 60, 80, 90
   maxRounds: number; // 2, 3, 5, 7
   maxPlayers: number; // 2 to 10

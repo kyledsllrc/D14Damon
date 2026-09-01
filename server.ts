@@ -84,6 +84,8 @@ const GLOBAL_STORE: GlobalStatsStore = {
 // Rooms Registry
 export type UnoColor = 'red' | 'blue' | 'green' | 'yellow' | 'wild';
 export type UnoType = 'number' | 'skip' | 'reverse' | 'draw2' | 'wild' | 'wild4';
+export type UnoTeamMode = 'ffa' | '2v2' | '3v3' | '4v4' | '5v5';
+export type UnoTeam = 'red' | 'blue';
 
 export interface UnoCard {
   id: string;
@@ -100,10 +102,13 @@ export interface ServerUnoGame {
   currentTurnPlayerId: string;
   direction: 1 | -1;
   playerHands: Map<string, UnoCard[]>;
+  playerTeams: Map<string, UnoTeam>;
+  teamMode: UnoTeamMode;
   calledUno: Set<string>;
   historyLog: { text: string; color: string }[];
   cardsPlayed: number;
   winner?: { id: string; name: string; avatar: string } | null;
+  winningTeam?: UnoTeam | null;
   finalScore?: number;
   status: 'playing' | 'game_over';
 }
@@ -497,9 +502,17 @@ function initUnoGame(room: ServerRoom) {
 
   const deck = createUnoDeck();
   const playerHands = new Map<string, UnoCard[]>();
+  const playerTeams = new Map<string, UnoTeam>();
+  const rawTeamMode = room.settings.unoTeamMode || 'ffa';
+  const isTeam = ['2v2', '3v3', '4v4', '5v5'].includes(rawTeamMode);
+  const teamMode: UnoTeamMode = isTeam ? rawTeamMode : 'ffa';
 
-  activePlayers.forEach(p => {
+  // In team mode, assign alternating slots: 0 -> red, 1 -> blue, 2 -> red, 3 -> blue, ...
+  activePlayers.forEach((p, idx) => {
     playerHands.set(p.id, deck.splice(0, 7));
+    if (isTeam) {
+      playerTeams.set(p.id, idx % 2 === 0 ? 'red' : 'blue');
+    }
   });
 
   // Pick top non-wild4 card for discard pile
@@ -518,22 +531,26 @@ function initUnoGame(room: ServerRoom) {
     currentTurnPlayerId: activePlayers[0].id,
     direction: 1,
     playerHands,
+    playerTeams,
+    teamMode,
     calledUno: new Set<string>(),
     historyLog: [
       {
-        text: `Match started! Top card: ${topCard.color === 'wild' ? 'Wild' : topCard.color.toUpperCase()} ${
-          topCard.type === 'number' ? topCard.value : topCard.type.toUpperCase()
-        }`,
+        text: `Match started! ${isTeam ? `[${teamMode.toUpperCase()} Team Battle] ` : ''}Top card: ${
+          topCard.color === 'wild' ? 'Wild' : topCard.color.toUpperCase()
+        } ${topCard.type === 'number' ? topCard.value : topCard.type.toUpperCase()}`,
         color: startColor,
       },
     ],
     cardsPlayed: 0,
     winner: null,
+    winningTeam: null,
     finalScore: 0,
     status: 'playing',
   };
 
-  broadcastUnoState(room, `Match started! ${activePlayers[0].username}'s turn`);
+  const firstTeamLabel = isTeam ? ` [Team ${playerTeams.get(activePlayers[0].id) === 'red' ? 'Red 🔴' : 'Blue 🔵'}]` : '';
+  broadcastUnoState(room, `Match started! ${activePlayers[0].username}'s turn${firstTeamLabel}`);
 }
 
 function broadcastUnoState(room: ServerRoom, banner?: string) {
@@ -541,6 +558,15 @@ function broadcastUnoState(room: ServerRoom, banner?: string) {
   const game = room.unoGame;
   const activePlayers = room.state.players.filter(p => p.isConnected);
   const topDiscard = game.discardPile[game.discardPile.length - 1] || null;
+
+  let redTotalCards = 0;
+  let blueTotalCards = 0;
+  activePlayers.forEach(pl => {
+    const tm = game.playerTeams.get(pl.id);
+    const count = (game.playerHands.get(pl.id) || []).length;
+    if (tm === 'red') redTotalCards += count;
+    if (tm === 'blue') blueTotalCards += count;
+  });
 
   activePlayers.forEach(p => {
     const socketId = p.socketId;
@@ -555,6 +581,7 @@ function broadcastUnoState(room: ServerRoom, banner?: string) {
       avatar: pl.avatar,
       color: pl.color,
       isBot: pl.id.startsWith('bot_'),
+      team: game.playerTeams.get(pl.id) || null,
       cardCount: (game.playerHands.get(pl.id) || []).length,
       calledUno: game.calledUno.has(pl.id),
       cards: pl.id === p.id ? myHand : [],
@@ -563,6 +590,9 @@ function broadcastUnoState(room: ServerRoom, banner?: string) {
     socket.emit('uno:state', {
       players: playerSummaries,
       myCards: myHand,
+      myTeam: game.playerTeams.get(p.id) || null,
+      teamMode: game.teamMode,
+      teamCardCounts: { red: redTotalCards, blue: blueTotalCards },
       discardPile: game.discardPile,
       topDiscard,
       activeColor: game.activeColor,
@@ -573,6 +603,7 @@ function broadcastUnoState(room: ServerRoom, banner?: string) {
       cardsPlayed: game.cardsPlayed,
       actionBanner: banner || null,
       winner: game.winner || null,
+      winningTeam: game.winningTeam || null,
       finalScore: game.finalScore || 0,
       status: game.status,
     });
@@ -1751,20 +1782,45 @@ io.on('connection', (socket: Socket) => {
 
     // Check Win Condition
     if (hand.length === 0) {
+      const activePlayers = room.state.players.filter(p => p.isConnected);
+      const playerTeam = game.playerTeams.get(currentPlayerId);
       let totalScore = 0;
-      game.playerHands.forEach((otherHand) => {
-        otherHand.forEach(c => totalScore += c.score);
-      });
+
+      if (game.teamMode !== 'ffa' && playerTeam) {
+        // Team win! Sum cards of OPPOSING team
+        game.playerHands.forEach((otherHand, pId) => {
+          const otherTeam = game.playerTeams.get(pId);
+          if (otherTeam !== playerTeam) {
+            otherHand.forEach(c => totalScore += c.score);
+          }
+        });
+        game.winningTeam = playerTeam;
+      } else {
+        game.playerHands.forEach((otherHand) => {
+          otherHand.forEach(c => totalScore += c.score);
+        });
+      }
 
       game.status = 'game_over';
       game.winner = { id: senderPlayer!.id, name: senderName, avatar: senderPlayer!.avatar };
       game.finalScore = totalScore;
       game.currentTurnPlayerId = '';
 
-      broadcastUnoState(room, `🏆 ${senderName} won the UNO Showdown! (+${totalScore} pts)`);
+      const winBanner = game.winningTeam
+        ? `🏆 TEAM ${game.winningTeam === 'red' ? 'RED 🔴' : 'BLUE 🔵'} WINS THE UNO CLASH! (${senderName} laid the final card! +${totalScore} pts)`
+        : `🏆 ${senderName} won the UNO Showdown! (+${totalScore} pts)`;
+
+      broadcastUnoState(room, winBanner);
       io.to(room.id).emit('uno:sound', { sound: 'victory' });
 
-      if (senderPlayer) {
+      if (game.winningTeam) {
+        activePlayers.forEach(p => {
+          if (game.playerTeams.get(p.id) === game.winningTeam) {
+            p.score = (p.score || 0) + totalScore;
+            updateGlobalLeaderboard(p, true);
+          }
+        });
+      } else if (senderPlayer) {
         senderPlayer.score = (senderPlayer.score || 0) + totalScore;
         updateGlobalLeaderboard(senderPlayer, true);
       }

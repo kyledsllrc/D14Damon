@@ -21,6 +21,9 @@ import {
   Volume2,
   CheckCircle2,
   AlertCircle,
+  Shield,
+  Swords,
+  Users,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useGame } from '../../context/GameContext';
@@ -29,6 +32,7 @@ import { AvatarRenderer } from '../AvatarRenderer';
 import { AiGameConfig } from '../VsAiArena';
 import { VsBotWagerBanner, VsBotPayoutModal } from '../VsBotWagerManager';
 import { getSocket } from '../../services/socket';
+import { UnoTeamMode, UnoTeam } from '../../types';
 
 interface UnoPartyProps {
   onBackToHub: () => void;
@@ -53,6 +57,7 @@ export interface UnoPlayer {
   isBot: boolean;
   cards: UnoCard[];
   color: string;
+  team?: UnoTeam;
   calledUno: boolean;
 }
 
@@ -94,81 +99,96 @@ const COLOR_MAP: Record<UnoColor, { bg: string; text: string; ring: string; bord
   },
 };
 
-// Generate fresh standard 108-card UNO Deck
-const createDeck = (): UnoCard[] => {
+const BOT_ROSTER = [
+  { name: 'SparkyBot', avatar: 'avatar_neon_bot', color: '#6366F1' },
+  { name: 'LunaFox', avatar: 'avatar_cyber_fox', color: '#EC4899' },
+  { name: 'ShadowNinja', avatar: 'avatar_shadow_ninja', color: '#F59E0B' },
+  { name: 'CyberCat', avatar: 'avatar_cyber_cat', color: '#10B981' },
+  { name: 'BlazeKnight', avatar: 'avatar_blaze_knight', color: '#EF4444' },
+  { name: 'PixelWizard', avatar: 'avatar_pixel_wizard', color: '#8B5CF6' },
+  { name: 'FrostBite', avatar: 'avatar_frost_bite', color: '#06B6D4' },
+  { name: 'RoboHero', avatar: 'avatar_robo_hero', color: '#3B82F6' },
+  { name: 'HyperNova', avatar: 'avatar_hyper_nova', color: '#D946EF' },
+];
+
+// Generate fresh standard 108-card UNO Deck (or doubled for large 8-10 player games)
+const createDeck = (playerCount: number = 4): UnoCard[] => {
   const deck: UnoCard[] = [];
   const colors: UnoColor[] = ['red', 'blue', 'green', 'yellow'];
+  const copies = playerCount >= 8 ? 2 : 1; // Double deck for 8v8 or 5v5
 
-  colors.forEach((color) => {
-    // 1 Zero card
-    deck.push({
-      id: `${color}_0_${Math.random()}`,
-      color,
-      type: 'number',
-      value: 0,
-      score: 0,
-    });
-
-    // 2 of each 1-9
-    for (let v = 1; v <= 9; v++) {
+  for (let c = 0; c < copies; c++) {
+    colors.forEach((color) => {
+      // 1 Zero card
       deck.push({
-        id: `${color}_${v}_a_${Math.random()}`,
+        id: `${color}_0_${c}_${Math.random()}`,
         color,
         type: 'number',
-        value: v,
-        score: v,
+        value: 0,
+        score: 0,
+      });
+
+      // 2 of each 1-9
+      for (let v = 1; v <= 9; v++) {
+        deck.push({
+          id: `${color}_${v}_a_${c}_${Math.random()}`,
+          color,
+          type: 'number',
+          value: v,
+          score: v,
+        });
+        deck.push({
+          id: `${color}_${v}_b_${c}_${Math.random()}`,
+          color,
+          type: 'number',
+          value: v,
+          score: v,
+        });
+      }
+
+      // 2 Skips, 2 Reverses, 2 Draw Twos
+      for (let i = 0; i < 2; i++) {
+        deck.push({
+          id: `${color}_skip_${i}_${c}_${Math.random()}`,
+          color,
+          type: 'skip',
+          value: null,
+          score: 20,
+        });
+        deck.push({
+          id: `${color}_reverse_${i}_${c}_${Math.random()}`,
+          color,
+          type: 'reverse',
+          value: null,
+          score: 20,
+        });
+        deck.push({
+          id: `${color}_draw2_${i}_${c}_${Math.random()}`,
+          color,
+          type: 'draw2',
+          value: null,
+          score: 20,
+        });
+      }
+    });
+
+    // 4 Wilds & 4 Wild Draw Fours
+    for (let i = 0; i < 4; i++) {
+      deck.push({
+        id: `wild_${i}_${c}_${Math.random()}`,
+        color: 'wild',
+        type: 'wild',
+        value: null,
+        score: 50,
       });
       deck.push({
-        id: `${color}_${v}_b_${Math.random()}`,
-        color,
-        type: 'number',
-        value: v,
-        score: v,
+        id: `wild4_${i}_${c}_${Math.random()}`,
+        color: 'wild',
+        type: 'wild4',
+        value: null,
+        score: 50,
       });
     }
-
-    // 2 Skips, 2 Reverses, 2 Draw Twos
-    for (let i = 0; i < 2; i++) {
-      deck.push({
-        id: `${color}_skip_${i}_${Math.random()}`,
-        color,
-        type: 'skip',
-        value: null,
-        score: 20,
-      });
-      deck.push({
-        id: `${color}_reverse_${i}_${Math.random()}`,
-        color,
-        type: 'reverse',
-        value: null,
-        score: 20,
-      });
-      deck.push({
-        id: `${color}_draw2_${i}_${Math.random()}`,
-        color,
-        type: 'draw2',
-        value: null,
-        score: 20,
-      });
-    }
-  });
-
-  // 4 Wilds & 4 Wild Draw Fours
-  for (let i = 0; i < 4; i++) {
-    deck.push({
-      id: `wild_${i}_${Math.random()}`,
-      color: 'wild',
-      type: 'wild',
-      value: null,
-      score: 50,
-    });
-    deck.push({
-      id: `wild4_${i}_${Math.random()}`,
-      color: 'wild',
-      type: 'wild4',
-      value: null,
-      score: 50,
-    });
   }
 
   // Shuffle deck using Fisher-Yates
@@ -186,8 +206,13 @@ export const UnoParty: React.FC<UnoPartyProps> = ({ onBackToHub, aiConfig = null
 
   // Match state
   const [gameState, setGameState] = useState<'intro' | 'playing' | 'game_over'>('intro');
+  const [teamMode, setTeamMode] = useState<UnoTeamMode>('ffa');
   const [playerCount, setPlayerCount] = useState(4);
   const [players, setPlayers] = useState<UnoPlayer[]>([]);
+  const [myTeam, setMyTeam] = useState<UnoTeam | null>('red');
+  const [winningTeam, setWinningTeam] = useState<UnoTeam | null>(null);
+  const [teamCardCounts, setTeamCardCounts] = useState<{ red: number; blue: number }>({ red: 0, blue: 0 });
+
   const [deck, setDeck] = useState<UnoCard[]>([]);
   const [discardPile, setDiscardPile] = useState<UnoCard[]>([]);
   const [activeColor, setActiveColor] = useState<UnoColor>('red');
@@ -219,49 +244,58 @@ export const UnoParty: React.FC<UnoPartyProps> = ({ onBackToHub, aiConfig = null
     roomState?.roomId && roomState.settings?.gameMode === 'uno_party'
   );
   const localPlayerId = user?.id || 'human';
-  const roomPlayers = useMemo(() => {
-    if (!roomState) return [];
-    return roomState.players.filter((player) => player.isConnected);
-  }, [roomState?.players]);
 
   // Initialize Game (Solo / VS AI)
-  const handleStartGame = (numPlayers: number = playerCount) => {
+  const handleStartGame = (selectedMode: UnoTeamMode = teamMode) => {
     if (isMultiplayerRoom) {
       const socket = getSocket();
       socket.emit('uno:rematch');
       return;
     }
 
-    const resolvedPlayerCount = Math.max(2, Math.min(numPlayers, 4));
-    setPlayerCount(resolvedPlayerCount);
-    const newDeck = createDeck();
+    let resolvedCount = playerCount;
+    if (selectedMode === '2v2') resolvedCount = 4;
+    else if (selectedMode === '3v3') resolvedCount = 6;
+    else if (selectedMode === '4v4') resolvedCount = 8;
+    else if (selectedMode === '5v5') resolvedCount = 10;
 
-    const botTemplates = [
-      { name: 'SparkyBot', avatar: 'avatar_neon_bot', color: '#6366F1' },
-      { name: 'LunaFox', avatar: 'avatar_cyber_fox', color: '#EC4899' },
-      { name: 'ShadowNinja', avatar: 'avatar_shadow_ninja', color: '#F59E0B' },
-    ];
+    setTeamMode(selectedMode);
+    setPlayerCount(resolvedCount);
+    const isTeamGame = selectedMode !== 'ffa';
 
-    const initialPlayers: UnoPlayer[] = [
-      {
-        id: localPlayerId,
-        name: user?.username || 'You',
-        avatar: user?.avatar || 'avatar_cosmic_astro',
-        isBot: false,
-        cards: [],
-        color: user?.color || '#6366F1',
-        calledUno: false,
-      },
-      ...Array.from({ length: resolvedPlayerCount - 1 }, (_, i) => ({
-        id: `bot_${i}`,
-        name: botTemplates[i].name,
-        avatar: botTemplates[i].avatar,
-        isBot: true,
-        cards: [],
-        color: botTemplates[i].color,
-        calledUno: false,
-      })),
-    ];
+    const newDeck = createDeck(resolvedCount);
+
+    // Build player roster with alternating team seating
+    // Red 1 (Human) -> Blue 1 -> Red 2 -> Blue 2 -> Red 3 -> Blue 3 ...
+    const initialPlayers: UnoPlayer[] = [];
+
+    for (let i = 0; i < resolvedCount; i++) {
+      const assignedTeam: UnoTeam = isTeamGame ? (i % 2 === 0 ? 'red' : 'blue') : 'red';
+      if (i === 0) {
+        initialPlayers.push({
+          id: localPlayerId,
+          name: user?.username || 'You',
+          avatar: user?.avatar || 'avatar_cosmic_astro',
+          isBot: false,
+          cards: [],
+          color: user?.color || '#6366F1',
+          team: assignedTeam,
+          calledUno: false,
+        });
+      } else {
+        const botMeta = BOT_ROSTER[(i - 1) % BOT_ROSTER.length];
+        initialPlayers.push({
+          id: `bot_${i}`,
+          name: botMeta.name,
+          avatar: botMeta.avatar,
+          isBot: true,
+          cards: [],
+          color: botMeta.color,
+          team: assignedTeam,
+          calledUno: false,
+        });
+      }
+    }
 
     // Deal 7 cards to each player
     initialPlayers.forEach((p) => {
@@ -278,6 +312,7 @@ export const UnoParty: React.FC<UnoPartyProps> = ({ onBackToHub, aiConfig = null
     const startColor: UnoColor = topCard.color === 'wild' ? 'red' : topCard.color;
 
     setPlayers(initialPlayers);
+    setMyTeam('red');
     setDeck(newDeck);
     setDiscardPile([topCard]);
     setActiveColor(startColor);
@@ -289,9 +324,17 @@ export const UnoParty: React.FC<UnoPartyProps> = ({ onBackToHub, aiConfig = null
     setShowColorPicker(false);
     setPendingWildCard(null);
     setWinner(null);
+    setWinningTeam(null);
     setFinalScore(0);
     setCardsPlayedThisGame(0);
-    setHistoryLog([{ text: `Game started with ${topCard.color.toUpperCase()} ${topCard.type === 'number' ? topCard.value : topCard.type.toUpperCase()}`, color: topCard.color }]);
+    setHistoryLog([
+      {
+        text: `Match started! ${isTeamGame ? `[${selectedMode.toUpperCase()} Team Battle] ` : ''}Top: ${
+          topCard.color === 'wild' ? 'Wild' : topCard.color.toUpperCase()
+        } ${topCard.type === 'number' ? topCard.value : topCard.type.toUpperCase()}`,
+        color: topCard.color,
+      },
+    ]);
     setGameState('playing');
 
     soundManager.playRoundStart();
@@ -302,14 +345,14 @@ export const UnoParty: React.FC<UnoPartyProps> = ({ onBackToHub, aiConfig = null
     if (!isMultiplayerRoom) return;
 
     const socket = getSocket();
-
-    // Request initial authoritative UNO room state from server
     socket.emit('uno:get_state');
 
-    // Authoritative game state sync from server
     socket.on('uno:state', (data: {
-      players: { id: string; name: string; avatar: string; color: string; isBot: boolean; cardCount: number; calledUno: boolean; cards: UnoCard[] }[];
+      players: { id: string; name: string; avatar: string; color: string; isBot: boolean; team?: UnoTeam | null; cardCount: number; calledUno: boolean; cards: UnoCard[] }[];
       myCards: UnoCard[];
+      myTeam?: UnoTeam | null;
+      teamMode?: UnoTeamMode;
+      teamCardCounts?: { red: number; blue: number };
       discardPile: UnoCard[];
       topDiscard: UnoCard | null;
       activeColor: UnoColor;
@@ -320,6 +363,7 @@ export const UnoParty: React.FC<UnoPartyProps> = ({ onBackToHub, aiConfig = null
       cardsPlayed: number;
       actionBanner: string | null;
       winner: { id: string; name: string; avatar: string } | null;
+      winningTeam?: UnoTeam | null;
       finalScore: number;
       status: 'playing' | 'game_over';
     }) => {
@@ -330,6 +374,7 @@ export const UnoParty: React.FC<UnoPartyProps> = ({ onBackToHub, aiConfig = null
           avatar: p.avatar,
           color: p.color,
           isBot: p.isBot,
+          team: p.team || undefined,
           calledUno: p.calledUno,
           cards:
             p.id === localPlayerId
@@ -345,6 +390,11 @@ export const UnoParty: React.FC<UnoPartyProps> = ({ onBackToHub, aiConfig = null
                   })),
         }))
       );
+      if (data.teamMode) setTeamMode(data.teamMode);
+      if (data.myTeam) setMyTeam(data.myTeam);
+      if (data.teamCardCounts) setTeamCardCounts(data.teamCardCounts);
+      if (data.winningTeam) setWinningTeam(data.winningTeam);
+
       setDeck(
         Array(data.deckCount)
           .fill(null)
@@ -370,6 +420,7 @@ export const UnoParty: React.FC<UnoPartyProps> = ({ onBackToHub, aiConfig = null
           avatar: data.winner.avatar,
           color: '#6366F1',
           isBot: false,
+          team: data.winningTeam || undefined,
           calledUno: false,
           cards: [],
         });
@@ -378,7 +429,6 @@ export const UnoParty: React.FC<UnoPartyProps> = ({ onBackToHub, aiConfig = null
       setGameState(data.status);
     });
 
-    // Handle feedback when drawing card
     socket.on('uno:drawn_card_result', (data: { card: UnoCard | null }) => {
       setDrawnThisTurn(true);
       if (data.card) {
@@ -391,7 +441,6 @@ export const UnoParty: React.FC<UnoPartyProps> = ({ onBackToHub, aiConfig = null
       }
     });
 
-    // Sound effect broadcast listener
     socket.on('uno:sound', (data: { sound: 'play' | 'draw' | 'action' | 'uno_call' | 'victory' }) => {
       if (data.sound === 'play') soundManager.playCardPlay();
       else if (data.sound === 'draw') soundManager.playCardDraw();
@@ -423,15 +472,29 @@ export const UnoParty: React.FC<UnoPartyProps> = ({ onBackToHub, aiConfig = null
   };
 
   const localPlayer = players.find((player) => player.id === localPlayerId);
-  const opponents = players.filter((player) => player.id !== localPlayerId);
+  const otherPlayers = players.filter((player) => player.id !== localPlayerId);
   const humanCards = localPlayer?.cards || [];
   const humanPlayableCards = humanCards.filter(isCardPlayable);
   const humanHasPlayableCard = humanPlayableCards.length > 0;
-  const activePlayerName = isMultiplayerRoom
-    ? players.find((p) => p.id === currentTurnPlayerId)?.name || 'Player'
-    : players[currentTurn]?.name || 'Player';
+  const activePlayer = isMultiplayerRoom
+    ? players.find((p) => p.id === currentTurnPlayerId)
+    : players[currentTurn];
+  const activePlayerName = activePlayer?.name || 'Player';
 
-  // Bot Turn Automated Logic (Solo / VS AI mode only)
+  // Calculate live team card totals
+  const liveTeamCards = useMemo(() => {
+    if (teamMode === 'ffa') return null;
+    let red = 0;
+    let blue = 0;
+    players.forEach((p) => {
+      const cnt = p.cards.length;
+      if (p.team === 'red') red += cnt;
+      if (p.team === 'blue') blue += cnt;
+    });
+    return { red, blue };
+  }, [players, teamMode]);
+
+  // Bot Turn Automated Logic with Team Awareness (Solo / VS AI mode only)
   useEffect(() => {
     if (isMultiplayerRoom || gameState !== 'playing') return;
 
@@ -440,19 +503,34 @@ export const UnoParty: React.FC<UnoPartyProps> = ({ onBackToHub, aiConfig = null
 
     botTimeoutRef.current = setTimeout(() => {
       handleBotMove(currentPlayer);
-    }, 1200 + Math.random() * 600);
+    }, 1100 + Math.random() * 500);
 
     return () => {
       if (botTimeoutRef.current) clearTimeout(botTimeoutRef.current);
     };
   }, [isMultiplayerRoom, currentTurn, gameState, activeColor, discardPile]);
 
-  // Execute bot turn with real UNO draw rules
+  // Execute bot turn with real UNO rules and Team Smart Strategy
   const handleBotMove = (bot: UnoPlayer) => {
     const playableCards = bot.cards.filter(isCardPlayable);
 
     if (playableCards.length > 0) {
-      const chosenCard = playableCards.find((c) => c.type !== 'number') || playableCards[0];
+      const isTeam = teamMode !== 'ffa' && Boolean(bot.team);
+      const nextPlayerIdx = getNextPlayerIndex(1, direction, currentTurnRef.current);
+      const nextPlayer = players[nextPlayerIdx];
+      const isNextPlayerTeammate = isTeam && nextPlayer && nextPlayer.team === bot.team;
+
+      let chosenCard: UnoCard;
+
+      if (isNextPlayerTeammate) {
+        // Next is teammate: avoid harmful skips or draw cards if bot has normal number cards!
+        const gentleCard = playableCards.find((c) => c.type === 'number');
+        chosenCard = gentleCard || playableCards[0];
+      } else {
+        // Next is rival: aggressively hit them with skips, +2 or +4!
+        const attackCard = playableCards.find((c) => c.type === 'skip' || c.type === 'draw2' || c.type === 'wild4');
+        chosenCard = attackCard || playableCards.find((c) => c.type !== 'number') || playableCards[0];
+      }
 
       if (bot.cards.length === 2) {
         bot.calledUno = true;
@@ -474,22 +552,20 @@ export const UnoParty: React.FC<UnoPartyProps> = ({ onBackToHub, aiConfig = null
       }
     } else {
       // Bot has NO playable card -> Must draw 1 card from deck
-      triggerBanner(`${bot.name} has no matching card & draws 1 card`);
+      triggerBanner(`${bot.name} draws 1 card`);
       drawCardsForPlayer(currentTurn, 1, (newCard) => {
         if (newCard && isCardPlayable(newCard)) {
-          // Newly drawn card is playable! Bot plays it immediately
           setTimeout(() => {
             if (newCard.color === 'wild') {
               executePlayCard(currentTurn, newCard, 'blue');
             } else {
               executePlayCard(currentTurn, newCard);
             }
-          }, 800);
+          }, 700);
         } else {
-          // Not playable -> Bot passes turn
           setTimeout(() => {
             passTurn();
-          }, 700);
+          }, 600);
         }
       });
     }
@@ -560,11 +636,14 @@ export const UnoParty: React.FC<UnoPartyProps> = ({ onBackToHub, aiConfig = null
       card.type === 'number' ? card.value : card.type.toUpperCase()
     }`;
     setHistoryLog((prev) => [
-      { text: `${player.name} played ${cardLabel}${chosenWildColor ? ` (picked ${chosenWildColor.toUpperCase()})` : ''}`, color: nextColor },
+      {
+        text: `${player.name} played ${cardLabel}${chosenWildColor ? ` (picked ${chosenWildColor.toUpperCase()})` : ''}`,
+        color: nextColor,
+      },
       ...prev.slice(0, 8),
     ]);
 
-    // Win condition
+    // Win condition check
     if (newCards.length === 0) {
       handleGameOver(player);
       return;
@@ -582,12 +661,12 @@ export const UnoParty: React.FC<UnoPartyProps> = ({ onBackToHub, aiConfig = null
     } else if (card.type === 'reverse') {
       soundManager.playReverse();
       if (players.length === 2) {
-        triggerBanner(`Reverse! Plays again!`);
+        triggerBanner(`Reverse! ${player.name} plays again!`);
         advanceStep = 2;
       } else {
         nextDirection = (direction * -1) as 1 | -1;
         setDirection(nextDirection);
-        triggerBanner(`Direction REVERSED!`);
+        triggerBanner(`Rotation REVERSED!`);
         advanceStep = 1;
       }
     } else if (card.type === 'draw2') {
@@ -613,7 +692,11 @@ export const UnoParty: React.FC<UnoPartyProps> = ({ onBackToHub, aiConfig = null
     setCurrentTurn(nextPlayerIndex);
   };
 
-  const getNextPlayerIndex = (step: number = 1, dir: 1 | -1 = direction, baseTurn: number = currentTurnRef.current): number => {
+  const getNextPlayerIndex = (
+    step: number = 1,
+    dir: 1 | -1 = direction,
+    baseTurn: number = currentTurnRef.current
+  ): number => {
     const total = players.length;
     let next = (baseTurn + step * dir) % total;
     if (next < 0) next += total;
@@ -679,7 +762,7 @@ export const UnoParty: React.FC<UnoPartyProps> = ({ onBackToHub, aiConfig = null
             triggerBanner(`Drew ${drawnCard.color.toUpperCase()} ${drawnCard.value ?? drawnCard.type} (Cannot Play). Turn passes.`);
             setTimeout(() => {
               passTurn();
-            }, 1400);
+            }, 1200);
           }
         }
       });
@@ -744,31 +827,35 @@ export const UnoParty: React.FC<UnoPartyProps> = ({ onBackToHub, aiConfig = null
     }, 2500);
   };
 
-  // Game Over handling
+  // Game Over handling (Supporting Team Win!)
   const handleGameOver = (winningPlayer: UnoPlayer) => {
     soundManager.playVictory();
     setWinner(winningPlayer);
 
+    const isTeam = teamMode !== 'ffa' && Boolean(winningPlayer.team);
+    const winTeam = winningPlayer.team || null;
+    setWinningTeam(winTeam);
+
     let calculatedPoints = 0;
-    players.forEach((p) => {
-      p.cards.forEach((c) => {
-        calculatedPoints += c.score;
+    if (isTeam && winTeam) {
+      // Sum remaining cards of opposing team only
+      players.forEach((p) => {
+        if (p.team !== winTeam) {
+          p.cards.forEach((c) => (calculatedPoints += c.score));
+        }
       });
-    });
+    } else {
+      players.forEach((p) => {
+        p.cards.forEach((c) => (calculatedPoints += c.score));
+      });
+    }
 
     setFinalScore(calculatedPoints);
     setGameState('game_over');
 
-    // Emit game over event for multiplayer sync
-    if (isMultiplayerRoom) {
-      const socket = getSocket();
-      socket.emit('uno:game_over', {
-        winnerId: winningPlayer.id,
-        finalScore: calculatedPoints,
-      });
-    }
+    const didHumanWin = isTeam ? winTeam === 'red' : winningPlayer.id === localPlayerId;
 
-    if (winningPlayer.id === localPlayerId) {
+    if (didHumanWin) {
       updateStats(
         {
           gamesPlayed: 1,
@@ -882,7 +969,7 @@ export const UnoParty: React.FC<UnoPartyProps> = ({ onBackToHub, aiConfig = null
       <div className="flex items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
         <button
           onClick={onBackToHub}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Arcade Hub</span>
@@ -897,7 +984,11 @@ export const UnoParty: React.FC<UnoPartyProps> = ({ onBackToHub, aiConfig = null
               UNO Party Showdown
             </h2>
             <span className="text-[11px] font-bold text-rose-500">
-              {isMultiplayerRoom ? 'Room Match • Real Players Only' : 'Official Draw-1 Rules & Strategy'}
+              {isMultiplayerRoom
+                ? `Live Room • ${teamMode !== 'ffa' ? `${teamMode.toUpperCase()} Team Battle` : 'Free For All'}`
+                : teamMode !== 'ffa'
+                ? `${teamMode.toUpperCase()} Team Clash (Red 🔴 vs Blue 🔵)`
+                : 'Draw-1 Rules & Party Strategy'}
             </span>
           </div>
         </div>
@@ -924,42 +1015,101 @@ export const UnoParty: React.FC<UnoPartyProps> = ({ onBackToHub, aiConfig = null
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 text-center space-y-6 shadow-xl"
+          className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 text-center space-y-6 shadow-xl"
         >
-          <div className="w-24 h-24 mx-auto rounded-3xl bg-gradient-to-tr from-rose-500 via-amber-400 to-blue-500 flex items-center justify-center shadow-2xl text-white animate-pulse">
-            <Layers className="w-12 h-12" />
+          <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-3xl bg-gradient-to-tr from-rose-500 via-amber-400 to-blue-500 flex items-center justify-center shadow-2xl text-white animate-pulse">
+            <Layers className="w-10 h-10 sm:w-12 sm:h-12" />
           </div>
 
-          <div className="space-y-2 max-w-md mx-auto">
-            <h1 className="text-3xl font-black text-slate-900 dark:text-white">
+          <div className="space-y-2 max-w-lg mx-auto">
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
               UNO Party Arena!
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-              Match color or number. If you don’t have a matching card, draw 1 from the deck! If it matches, play it right away or pass. Don’t forget to call UNO with 1 card left!
+              Play Free-For-All or team up in epic <strong>2v2, 3v3, 4v4, or 5v5 Team Battles</strong>! When anyone on your team empties their hand, your entire team wins the match!
             </p>
           </div>
 
-          {!isMultiplayerRoom && <div className="max-w-xs mx-auto space-y-2">
-            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
-              Choose Player Count:
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {[2, 3, 4].map((num) => (
-                <button
-                  key={num}
-                  type="button"
-                  onClick={() => setPlayerCount(num as 2 | 3 | 4)}
-                  className={`py-2.5 rounded-2xl text-xs font-black transition-all border ${
-                    playerCount === num
-                      ? 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-500/30'
-                      : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
-                  }`}
-                >
-                  {num} Players
-                </button>
-              ))}
+          {/* Mode Selector (FFA vs 2v2, 3v3, 4v4, 5v5) */}
+          {!isMultiplayerRoom && (
+            <div className="max-w-md mx-auto space-y-3">
+              <label className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+                Select Battle Format & Team Mode:
+              </label>
+
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                {[
+                  { id: 'ffa', label: 'Solo (FFA)', desc: 'Free-For-All' },
+                  { id: '2v2', label: '2 vs 2', desc: '4 Players' },
+                  { id: '3v3', label: '3 vs 3', desc: '6 Players' },
+                  { id: '4v4', label: '4 vs 4', desc: '8 Players' },
+                  { id: '5v5', label: '5 vs 5', desc: '10 Players' },
+                ].map((mode) => (
+                  <button
+                    key={mode.id}
+                    type="button"
+                    onClick={() => {
+                      setTeamMode(mode.id as UnoTeamMode);
+                    }}
+                    className={`p-2.5 rounded-2xl text-center border transition-all cursor-pointer ${
+                      teamMode === mode.id
+                        ? 'bg-gradient-to-r from-rose-600 to-indigo-600 text-white border-rose-500 shadow-md shadow-rose-500/20 scale-102'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-indigo-400'
+                    }`}
+                  >
+                    <span className="block text-xs font-black">{mode.label}</span>
+                    <span className="block text-[9px] opacity-75">{mode.desc}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Player count selector for FFA */}
+              {teamMode === 'ffa' ? (
+                <div className="space-y-1.5 pt-1">
+                  <label className="text-[11px] font-bold text-slate-400 block">
+                    FFA Player Count:
+                  </label>
+                  <div className="flex justify-center gap-2">
+                    {[2, 3, 4, 6, 8].map((num) => (
+                      <button
+                        key={num}
+                        type="button"
+                        onClick={() => setPlayerCount(num)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all border cursor-pointer ${
+                          playerCount === num
+                            ? 'bg-rose-500 text-white border-rose-500 shadow-xs'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                        }`}
+                      >
+                        {num} Players
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                /* Team Roster Preview */
+                <div className="p-3 bg-gradient-to-r from-rose-950/30 to-blue-950/30 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center justify-around text-xs">
+                  <div className="text-center">
+                    <span className="px-2 py-0.5 rounded-full bg-rose-500 text-white font-black text-[10px]">
+                      TEAM RED 🔴 (You & Allies)
+                    </span>
+                    <p className="text-[11px] text-slate-400 font-bold mt-1">
+                      {teamMode === '2v2' ? '2 Players' : teamMode === '3v3' ? '3 Players' : teamMode === '4v4' ? '4 Players' : '5 Players'}
+                    </p>
+                  </div>
+                  <Swords className="w-5 h-5 text-amber-400 animate-pulse" />
+                  <div className="text-center">
+                    <span className="px-2 py-0.5 rounded-full bg-blue-500 text-white font-black text-[10px]">
+                      TEAM BLUE 🔵 (Rival Squad)
+                    </span>
+                    <p className="text-[11px] text-slate-400 font-bold mt-1">
+                      {teamMode === '2v2' ? '2 Players' : teamMode === '3v3' ? '3 Players' : teamMode === '4v4' ? '4 Players' : '5 Players'}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>}
+          )}
 
           <div className="grid grid-cols-3 gap-3 max-w-md mx-auto text-xs">
             <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex flex-col items-center">
@@ -969,8 +1119,8 @@ export const UnoParty: React.FC<UnoPartyProps> = ({ onBackToHub, aiConfig = null
             </div>
             <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex flex-col items-center">
               <RotateCcw className="w-6 h-6 text-amber-500 mb-1" />
-              <p className="font-bold text-slate-800 dark:text-slate-200">Reverses & Skips</p>
-              <p className="text-[10px] text-slate-500">Disrupt turn orders</p>
+              <p className="font-bold text-slate-800 dark:text-slate-200">Team Strategy</p>
+              <p className="text-[10px] text-slate-500">Coordinate color changes</p>
             </div>
             <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex flex-col items-center">
               <Sparkles className="w-6 h-6 text-indigo-500 mb-1" />
@@ -980,10 +1130,10 @@ export const UnoParty: React.FC<UnoPartyProps> = ({ onBackToHub, aiConfig = null
           </div>
 
           <button
-            onClick={() => handleStartGame(playerCount)}
-            className="px-8 py-4 rounded-2xl font-black text-sm text-white bg-gradient-to-r from-rose-600 via-amber-500 to-blue-600 hover:from-rose-500 hover:to-blue-500 transition-all shadow-xl shadow-rose-600/30 hover:scale-105 active:scale-95"
+            onClick={() => handleStartGame(teamMode)}
+            className="px-8 py-4 rounded-2xl font-black text-sm text-white bg-gradient-to-r from-rose-600 via-amber-500 to-blue-600 hover:from-rose-500 hover:to-blue-500 transition-all shadow-xl shadow-rose-600/30 hover:scale-105 active:scale-95 cursor-pointer"
           >
-            <span>{isMultiplayerRoom ? 'Deal Room Cards & Play!' : 'Deal the Cards & Play!'}</span>
+            <span>{isMultiplayerRoom ? 'Deal Room Cards & Play!' : 'Start Match & Deal Cards!'}</span>
           </button>
         </motion.div>
       )}
@@ -991,7 +1141,50 @@ export const UnoParty: React.FC<UnoPartyProps> = ({ onBackToHub, aiConfig = null
       {/* ACTIVE GAME TABLE */}
       {gameState === 'playing' && (
         <div className="space-y-4">
-          <div className="bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-950 border-4 border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative min-h-[480px] flex flex-col justify-between overflow-hidden">
+          {/* Dual Team Score HUD (when in team mode) */}
+          {teamMode !== 'ffa' && liveTeamCards && (
+            <div className="grid grid-cols-2 gap-3 p-3 bg-slate-900/90 rounded-2xl border border-slate-800 shadow-md">
+              {/* Red Team Banner */}
+              <div className="p-2 rounded-xl bg-rose-950/60 border border-rose-800 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-rose-500 animate-pulse" />
+                  <div>
+                    <span className="text-xs font-black text-rose-300 block leading-tight">
+                      TEAM RED 🔴 {myTeam === 'red' && '(Your Squad)'}
+                    </span>
+                    <span className="text-[10px] text-rose-400/80">
+                      {players.filter((p) => p.team === 'red').map((p) => p.name).join(', ')}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-base font-black text-rose-200">{liveTeamCards.red}</span>
+                  <span className="text-[9px] text-rose-400 block uppercase">cards left</span>
+                </div>
+              </div>
+
+              {/* Blue Team Banner */}
+              <div className="p-2 rounded-xl bg-blue-950/60 border border-blue-800 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-blue-500 animate-pulse" />
+                  <div>
+                    <span className="text-xs font-black text-blue-300 block leading-tight">
+                      TEAM BLUE 🔵 {myTeam === 'blue' && '(Your Squad)'}
+                    </span>
+                    <span className="text-[10px] text-blue-400/80">
+                      {players.filter((p) => p.team === 'blue').map((p) => p.name).join(', ')}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-base font-black text-blue-200">{liveTeamCards.blue}</span>
+                  <span className="text-[9px] text-blue-400 block uppercase">cards left</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-950 border-4 border-slate-800 rounded-3xl p-4 sm:p-6 shadow-2xl relative min-h-[500px] flex flex-col justify-between overflow-hidden">
             {/* Direction Spiral Flow in the table center */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-10">
               <motion.div
@@ -1008,65 +1201,87 @@ export const UnoParty: React.FC<UnoPartyProps> = ({ onBackToHub, aiConfig = null
                   initial={{ opacity: 0, y: -20, scale: 0.9 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -20, scale: 0.9 }}
-                  className="absolute top-4 left-1/2 -translate-x-1/2 z-40 px-6 py-2 rounded-full bg-amber-500 text-slate-950 text-xs sm:text-sm font-black shadow-2xl shadow-amber-500/50 flex items-center gap-2 border-2 border-white"
+                  className="absolute top-4 left-1/2 -translate-x-1/2 z-40 px-5 py-2 rounded-full bg-amber-500 text-slate-950 text-xs sm:text-sm font-black shadow-2xl shadow-amber-500/50 flex items-center gap-2 border-2 border-white"
                 >
-                  <AlertCircle className="w-4 h-4" />
+                  <AlertCircle className="w-4 h-4 shrink-0" />
                   <span>{actionBanner}</span>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* TOP AREA: Opponents */}
-            <div className="flex items-center justify-around gap-2 z-10 flex-wrap">
-              {opponents.map((opponent, bIdx) => {
-                const isOpponentTurn = isMultiplayerRoom
-                  ? currentTurnPlayerId === opponent.id
-                  : currentTurn === bIdx + 1;
+            {/* TOP AREA: Other Players (Teammates & Opponents) */}
+            <div className="flex items-center justify-center gap-2 z-10 flex-wrap">
+              {otherPlayers.map((otherP) => {
+                const isOtherTurn = isMultiplayerRoom
+                  ? currentTurnPlayerId === otherP.id
+                  : players[currentTurn]?.id === otherP.id;
+                const isMyTeammate = teamMode !== 'ffa' && otherP.team === 'red';
+                const otherIdx = players.findIndex((p) => p.id === otherP.id);
+
                 return (
                   <div
-                    key={opponent.id}
-                    className={`p-3 rounded-2xl border transition-all flex flex-col items-center gap-1.5 backdrop-blur-md min-w-[110px] ${
-                      isOpponentTurn
-                        ? 'bg-indigo-600/30 border-amber-400 ring-2 ring-amber-400/50 scale-105 shadow-lg shadow-amber-400/20 animate-pulse'
+                    key={otherP.id}
+                    className={`p-2.5 rounded-2xl border transition-all flex flex-col items-center gap-1 backdrop-blur-md min-w-[105px] max-w-[130px] ${
+                      isOtherTurn
+                        ? 'bg-indigo-600/40 border-amber-400 ring-2 ring-amber-400/60 scale-105 shadow-lg shadow-amber-400/20'
+                        : isMyTeammate
+                        ? 'bg-rose-950/40 border-rose-700/80 ring-1 ring-rose-500/30'
+                        : otherP.team === 'blue'
+                        ? 'bg-blue-950/40 border-blue-700/80 ring-1 ring-blue-500/30'
                         : 'bg-slate-900/60 border-slate-800'
                     }`}
                   >
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
-                        <AvatarRenderer avatar={opponent.avatar} className="w-full h-full object-cover" />
+                    {/* Team Role Pill */}
+                    {teamMode !== 'ffa' && (
+                      <span
+                        className={`text-[9px] font-black px-1.5 py-0.2 rounded-full uppercase ${
+                          isMyTeammate
+                            ? 'bg-rose-600 text-white'
+                            : 'bg-blue-600 text-white'
+                        }`}
+                      >
+                        {isMyTeammate ? '🛡️ Ally' : '⚔️ Rival'}
+                      </span>
+                    )}
+
+                    <div className="flex items-center gap-1.5 w-full">
+                      <div className="w-7 h-7 rounded-full overflow-hidden bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
+                        <AvatarRenderer avatar={otherP.avatar} className="w-full h-full object-cover" />
                       </div>
-                      <div className="text-left">
-                        <span className="text-xs font-black text-white block leading-none truncate max-w-[90px]">
-                          {opponent.name}
+                      <div className="text-left min-w-0 flex-1">
+                        <span className="text-[11px] font-black text-white block leading-none truncate">
+                          {otherP.name}
                         </span>
-                        <span className="text-[10px] text-slate-400 font-bold">
-                          {opponent.cards.length} cards {opponent.calledUno && '• UNO!'}
+                        <span className="text-[9px] text-slate-400 font-bold">
+                          {otherP.cards.length} cards {otherP.calledUno && '• UNO!'}
                         </span>
                       </div>
                     </div>
 
-                    {/* Opponent Card Backs */}
-                    <div className="flex -space-x-3 overflow-hidden py-1">
-                      {opponent.cards.slice(0, 6).map((_, i) => (
+                    {/* Opponent Mini Card Backs */}
+                    <div className="flex -space-x-2.5 overflow-hidden py-0.5">
+                      {otherP.cards.slice(0, 5).map((_, i) => (
                         <div
                           key={i}
-                          className="w-5 h-8 rounded-md bg-rose-600 border border-white shadow-sm flex items-center justify-center text-[8px] font-black text-white"
+                          className={`w-4 h-6 rounded-sm border border-white shadow-xs flex items-center justify-center text-[7px] font-black text-white ${
+                            isMyTeammate ? 'bg-rose-600' : 'bg-blue-600'
+                          }`}
                         >
                           U
                         </div>
                       ))}
-                      {opponent.cards.length > 6 && (
-                        <div className="w-5 h-8 rounded-md bg-slate-800 border border-slate-600 flex items-center justify-center text-[8px] font-bold text-slate-300">
-                          +{opponent.cards.length - 6}
+                      {otherP.cards.length > 5 && (
+                        <div className="w-4 h-6 rounded-sm bg-slate-800 border border-slate-600 flex items-center justify-center text-[7px] font-bold text-slate-300">
+                          +{otherP.cards.length - 5}
                         </div>
                       )}
                     </div>
 
-                    {opponent.cards.length === 1 && !opponent.calledUno && (
+                    {otherP.cards.length === 1 && !otherP.calledUno && (
                       <button
                         type="button"
-                        onClick={() => handleCatchUno(opponent.id, bIdx + 1)}
-                        className="px-2 py-0.5 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-[10px] font-black shadow animate-pulse cursor-pointer"
+                        onClick={() => handleCatchUno(otherP.id, otherIdx)}
+                        className="px-2 py-0.5 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-[9px] font-black shadow animate-pulse cursor-pointer"
                       >
                         Catch UNO!
                       </button>
@@ -1138,7 +1353,7 @@ export const UnoParty: React.FC<UnoPartyProps> = ({ onBackToHub, aiConfig = null
 
             {/* BOTTOM AREA: Human Hand Controls */}
             <div className="space-y-3 z-10">
-              {/* Status Alert: When no card matches, tell the user to draw 1 card */}
+              {/* Status Alert: When no card matches, tell user to draw */}
               {isHumanTurn && !humanHasPlayableCard && !drawnThisTurn && (
                 <div className="p-2.5 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-300 text-xs font-bold flex items-center justify-between gap-3 animate-fade-in">
                   <div className="flex items-center gap-2">
@@ -1148,7 +1363,7 @@ export const UnoParty: React.FC<UnoPartyProps> = ({ onBackToHub, aiConfig = null
                   <button
                     type="button"
                     onClick={handleHumanDraw}
-                    className="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow transition-all shrink-0"
+                    className="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow transition-all shrink-0 cursor-pointer"
                   >
                     Draw 1 Card
                   </button>
@@ -1176,8 +1391,8 @@ export const UnoParty: React.FC<UnoPartyProps> = ({ onBackToHub, aiConfig = null
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={handleCallUno}
-                    className={`px-4 py-1.5 rounded-xl font-black text-xs text-white shadow-lg transition-all ${
-                      localPlayer?.cards.length <= 2 && !localPlayer?.calledUno
+                    className={`px-4 py-1.5 rounded-xl font-black text-xs text-white shadow-lg transition-all cursor-pointer ${
+                      localPlayer && localPlayer.cards.length <= 2 && !localPlayer.calledUno
                         ? 'bg-rose-500 ring-4 ring-amber-400 animate-bounce shadow-rose-500/50'
                         : 'bg-slate-800 hover:bg-slate-700'
                     }`}
@@ -1189,7 +1404,7 @@ export const UnoParty: React.FC<UnoPartyProps> = ({ onBackToHub, aiConfig = null
                   {isHumanTurn && !drawnThisTurn && (
                     <button
                       onClick={handleHumanDraw}
-                      className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs shadow flex items-center gap-1.5 transition-all"
+                      className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs shadow flex items-center gap-1.5 transition-all cursor-pointer"
                     >
                       <PlusCircle className="w-3.5 h-3.5" />
                       <span>Draw 1 Card</span>
@@ -1200,7 +1415,7 @@ export const UnoParty: React.FC<UnoPartyProps> = ({ onBackToHub, aiConfig = null
                   {isHumanTurn && drawnThisTurn && (
                     <button
                       onClick={passTurn}
-                      className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs shadow flex items-center gap-1 transition-all"
+                      className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs shadow flex items-center gap-1 transition-all cursor-pointer"
                     >
                       <span>Pass Turn</span>
                       <ChevronRight className="w-3.5 h-3.5" />
@@ -1247,7 +1462,7 @@ export const UnoParty: React.FC<UnoPartyProps> = ({ onBackToHub, aiConfig = null
                         key={col}
                         type="button"
                         onClick={() => handleSelectWildColor(col)}
-                        className={`p-4 rounded-2xl text-white font-black text-base shadow-lg transition-transform hover:scale-105 active:scale-95 ${COLOR_MAP[col].bg}`}
+                        className={`p-4 rounded-2xl text-white font-black text-base shadow-lg transition-transform hover:scale-105 active:scale-95 cursor-pointer ${COLOR_MAP[col].bg}`}
                       >
                         {COLOR_MAP[col].label}
                       </button>
@@ -1289,20 +1504,35 @@ export const UnoParty: React.FC<UnoPartyProps> = ({ onBackToHub, aiConfig = null
           </div>
 
           <div className="space-y-1">
-            <h2 className="text-2xl font-black text-slate-900 dark:text-white">
-              {winner?.id === localPlayerId ? 'You Won the UNO Showdown!' : `${winner?.name} Won the Match!`}
-            </h2>
-            <p className="text-xs text-slate-400">
-              {winner?.id === localPlayerId
-                ? `You earned ${finalScore} points from remaining opponents' cards!`
-                : 'Good effort! Rematch to reclaim the victory!'}
-            </p>
+            {teamMode !== 'ffa' ? (
+              <>
+                <h2 className="text-2xl font-black text-slate-900 dark:text-white">
+                  {winningTeam === 'red' ? '🎉 TEAM RED WINS THE UNO CLASH!' : '💥 TEAM BLUE WINS THE MATCH!'}
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {winningTeam === 'red'
+                    ? `Victory! ${winner?.name} played the final card! Your team earned +${finalScore} points!`
+                    : `Team Blue triumphed this round (${winner?.name} laid the winning card). Play a rematch!`}
+                </p>
+              </>
+            ) : (
+              <>
+                <h2 className="text-2xl font-black text-slate-900 dark:text-white">
+                  {winner?.id === localPlayerId ? 'You Won the UNO Showdown!' : `${winner?.name} Won the Match!`}
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {winner?.id === localPlayerId
+                    ? `You earned ${finalScore} points from remaining opponents' cards!`
+                    : 'Good effort! Rematch to reclaim the victory!'}
+                </p>
+              </>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3 max-w-xs mx-auto">
             <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
               <p className="text-xl font-black text-indigo-500">{finalScore}</p>
-              <p className="text-[10px] text-slate-400 uppercase font-bold">Round Score</p>
+              <p className="text-[10px] text-slate-400 uppercase font-bold">Points Awarded</p>
             </div>
             <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
               <p className="text-xl font-black text-rose-500">{cardsPlayedThisGame}</p>
@@ -1312,14 +1542,14 @@ export const UnoParty: React.FC<UnoPartyProps> = ({ onBackToHub, aiConfig = null
 
           <div className="flex items-center justify-center gap-3">
             <button
-              onClick={() => handleStartGame(playerCount)}
-              className="px-6 py-3 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs shadow-md transition-all"
+              onClick={() => handleStartGame(teamMode)}
+              className="px-6 py-3 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs shadow-md transition-all cursor-pointer"
             >
               Play Another Match
             </button>
             <button
               onClick={onBackToHub}
-              className="px-6 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs transition-all"
+              className="px-6 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs transition-all cursor-pointer"
             >
               Arcade Hub
             </button>
@@ -1335,7 +1565,7 @@ export const UnoParty: React.FC<UnoPartyProps> = ({ onBackToHub, aiConfig = null
         gameTitle="UNO Party Showdown"
         onRematch={() => {
           setShowWagerModal(false);
-          handleStartGame(playerCount);
+          handleStartGame(teamMode);
         }}
         onBackToHub={onBackToHub}
       />
