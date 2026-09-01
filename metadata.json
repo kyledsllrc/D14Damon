@@ -1,0 +1,8 @@
+{
+  "name": "Guess What? - Multiplayer Drawing & Guessing Game",
+  "description": "The ultimate 20-in-1 arcade party game hub with real-time multiplayer drawing, UNO Party showdown, GW 4-gem balances (Diamond, Amethyst, Jade, Ruby), high-stakes betting rooms, and global hall of fame.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
