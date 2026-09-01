@@ -136,11 +136,6 @@ export const WelcomeAuthGate: React.FC<WelcomeAuthGateProps> = ({ onEnter }) => 
       >
         {/* Brand Header with Y2K Gothic Drip Logo & Tagline */}
         <div className="text-center space-y-3 flex flex-col items-center">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-purple-500/10 dark:bg-purple-500/20 border-2 border-purple-500/30 text-purple-700 dark:text-pink-300 text-xs font-black tracking-wider uppercase">
-            <Sparkles className="w-3.5 h-3.5 text-pink-500" />
-            <span>Guess What? ✦ Y2K Gothic Drip Arcade</span>
-          </div>
-
           <div className="pt-1">
             <GWLogo size="xl" showText={true} />
           </div>

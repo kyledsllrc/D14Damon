@@ -31,14 +31,6 @@ export const GWLogo: React.FC<GWLogoProps> = ({
     xl: 'text-4xl sm:text-5xl',
   }[size];
 
-  const subtextSizeClasses = {
-    xs: 'text-[9px]',
-    sm: 'text-[10px]',
-    md: 'text-xs',
-    lg: 'text-sm',
-    xl: 'text-base',
-  }[size];
-
   return (
     <div className={`inline-flex items-center gap-3 select-none ${className}`}>
       {/* Y2K Graffiti Liquid Gold GW Badge */}
@@ -198,12 +190,6 @@ export const GWLogo: React.FC<GWLogoProps> = ({
               GW
             </span>
           </div>
-          <span
-            className={`${subtextSizeClasses} font-bold text-amber-400/90 tracking-wider uppercase pt-0.5 flex items-center gap-1`}
-          >
-            <span>Arcade Party</span>
-            <span className="text-[10px] text-amber-300">✦</span>
-          </span>
         </div>
       )}
     </div>
