@@ -295,6 +295,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     setIsFirebaseConnected(isFirebaseConfigured());
 
+    const hydrateRegisteredUsers = async () => {
+      if (!isFirebaseConfigured()) return;
+      try {
+        const liveUsers = await fetchAllUsersFromFirestore();
+        if (liveUsers && liveUsers.length > 0) {
+          setAllRegisteredUsers(liveUsers.map(normalizeUserProfile));
+        }
+      } catch (error) {
+        console.warn('Failed to hydrate registered users from Firestore:', error);
+      }
+    };
+
+    hydrateRegisteredUsers();
+
     // 1. Subscribe to live global activities
     const unsubActivities = subscribeToFirestoreActivities((liveActs) => {
       if (liveActs && liveActs.length > 0) {

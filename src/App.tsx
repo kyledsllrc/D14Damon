@@ -24,6 +24,7 @@ import { WordBomb } from './components/games/WordBomb';
 import { UnoParty } from './components/games/UnoParty';
 import { TriviaDash } from './components/games/TriviaDash';
 import { AnagramRush } from './components/games/AnagramRush';
+import { SpellingBee } from './components/games/SpellingBee';
 import { SoundMystery } from './components/games/SoundMystery';
 import { ReflexNeon } from './components/games/ReflexNeon';
 import { CyberTyping } from './components/games/CyberTyping';
@@ -86,6 +87,8 @@ const MainGameContainer: React.FC<{
         return <AnagramRush onBackToHub={leaveRoom} />;
       case 'bomb_chain':
         return <WordBomb onBackToHub={leaveRoom} />;
+      case 'spelling_bee':
+        return <SpellingBee onBackToHub={leaveRoom} />;
       case 'memory_rush':
         return <MemoryRush onBackToHub={leaveRoom} />;
       case 'sound_mystery':
@@ -338,6 +341,18 @@ const MainGameContainer: React.FC<{
             </motion.div>
           )}
 
+          {!gameState && currentMode === 'spelling_bee' && (
+            <motion.div
+              key="spelling_bee"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+            >
+              <SpellingBee onBackToHub={handleBackToLobby} aiConfig={activeAiConfig} />
+            </motion.div>
+          )}
+
           {/* MODE 3: MEMORY DOODLE RUSH */}
           {!gameState && currentMode === 'memory_rush' && (
             <motion.div
@@ -438,7 +453,7 @@ const MainGameContainer: React.FC<{
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.2 }}
             >
-              <EightBallPool onBackToHub={handleBackToLobby} />
+              <EightBallPool onBackToHub={handleBackToLobby} aiConfig={activeAiConfig} />
             </motion.div>
           )}
 
@@ -451,7 +466,7 @@ const MainGameContainer: React.FC<{
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.2 }}
             >
-              <ChessGame onBackToHub={handleBackToLobby} />
+              <ChessGame onBackToHub={handleBackToLobby} aiConfig={activeAiConfig} />
             </motion.div>
           )}
 

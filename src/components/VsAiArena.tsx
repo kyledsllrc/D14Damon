@@ -97,6 +97,15 @@ const AI_GAMES: AiGameOption[] = [
     category: 'Word Logic',
   },
   {
+    id: 'spelling_bee',
+    name: 'Spelling Bee',
+    tagline: 'Build valid words from a shared letter hive against the AI buzzer',
+    icon: Sparkles,
+    accentColor: 'from-amber-500 to-yellow-500',
+    badge: 'Word Battle',
+    category: 'Word Logic',
+  },
+  {
     id: 'cyber_typing',
     name: 'Cyber Velocity Typing',
     tagline: 'High-speed WPM velocity rush against AI typing challenger',

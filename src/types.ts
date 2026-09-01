@@ -14,6 +14,7 @@ export type ArcadeGameMode =
   | 'speed_duel'
   | 'memory_rush'
   | 'bomb_chain'
+  | 'spelling_bee'
   | 'pixel_reveal'
   | 'blindfold_maestro'
   | 'sound_mystery'
@@ -243,6 +244,7 @@ export interface LeaderboardEntry {
   avatar: string;
   score: number;
   wins: number;
+  losses?: number;
   gamesPlayed: number;
   wordsGuessed: number;
   rank: number;

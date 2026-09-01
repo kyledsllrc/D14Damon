@@ -104,6 +104,13 @@ const ALL_GAME_MODES: Array<{
     badgeColor: 'bg-rose-100 text-rose-700 dark:bg-rose-900/60 dark:text-rose-300',
   },
   {
+    id: 'spelling_bee',
+    label: 'Spelling Bee',
+    icon: Sparkles,
+    badge: 'Word Challenge',
+    badgeColor: 'bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300',
+  },
+  {
     id: 'sound_mystery',
     label: 'Sound & Audio Mystery',
     icon: Music,
@@ -140,6 +147,17 @@ const ALL_GAME_MODES: Array<{
   },
 ];
 
+const getPlayerCountOptions = (gameMode: ArcadeGameMode): number[] => {
+  if (gameMode === 'eight_ball_pool' || gameMode === 'chess_game') return [2];
+  return Array.from({ length: 9 }, (_, index) => index + 2);
+};
+
+const getDefaultMaxPlayers = (gameMode: ArcadeGameMode): number => {
+  if (gameMode === 'eight_ball_pool' || gameMode === 'chess_game') return 2;
+  if (gameMode === 'uno_party') return 4;
+  return 8;
+};
+
 export const Lobby: React.FC<LobbyProps> = ({
   onOpenAuth,
   currentMode = 'multiplayer_draw',
@@ -161,8 +179,8 @@ export const Lobby: React.FC<LobbyProps> = ({
   const [roomName, setRoomName] = useState('');
   const [roundDuration, setRoundDuration] = useState<number>(60);
   const [maxRounds, setMaxRounds] = useState<number>(3);
-  const [maxPlayers, setMaxPlayers] = useState<number>(8);
-  const playerCountOptions = Array.from({ length: 9 }, (_, index) => index + 2);
+  const [maxPlayers, setMaxPlayers] = useState<number>(getDefaultMaxPlayers('multiplayer_draw'));
+  const playerCountOptions = getPlayerCountOptions(selectedGameMode);
   const [wordCategory, setWordCategory] = useState<WordCategory>('all');
   const [isPrivate, setIsPrivate] = useState(false);
   const [allowHints, setAllowHints] = useState(true);
@@ -172,6 +190,11 @@ export const Lobby: React.FC<LobbyProps> = ({
   const [betCurrency, setBetCurrency] = useState<CurrencyType>('diamond');
   const [betAmount, setBetAmount] = useState<string>('100000'); // 100K default
   const [betError, setBetError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const nextDefault = getDefaultMaxPlayers(selectedGameMode);
+    setMaxPlayers((current) => (getPlayerCountOptions(selectedGameMode).includes(current) ? current : nextDefault));
+  }, [selectedGameMode]);
 
   // Auto-fill room code from URL query parameter ?room=CODE
   useEffect(() => {
@@ -595,7 +618,10 @@ export const Lobby: React.FC<LobbyProps> = ({
                       <button
                         type="button"
                         key={g.id}
-                        onClick={() => setSelectedGameMode(g.id)}
+                        onClick={() => {
+                          setSelectedGameMode(g.id);
+                          setMaxPlayers(getDefaultMaxPlayers(g.id));
+                        }}
                         className={`p-2 rounded-xl text-left border flex items-center gap-2 transition-all cursor-pointer ${
                           isSelected
                             ? 'bg-indigo-50 dark:bg-indigo-950/80 border-indigo-500 text-indigo-900 dark:text-indigo-200 font-bold'

@@ -239,29 +239,51 @@ export function sanitizeForFirestore<T>(data: T): T {
   return data;
 }
 
+async function writeWithFirestoreFallback<T>(
+  callback: (db: Firestore) => Promise<T>,
+  fallbackDb?: Firestore | null
+): Promise<T> {
+  const primaryDb = getFirestoreDb();
+  if (!primaryDb) {
+    throw new Error('Firestore is not initialized.');
+  }
+
+  try {
+    return await callback(primaryDb);
+  } catch (error) {
+    if (fallbackDb && fallbackDb !== primaryDb) {
+      return await callback(fallbackDb);
+    }
+    throw error;
+  }
+}
+
 export async function saveProfileToFirestore(profile: UserProfile): Promise<void> {
   const db = getFirestoreDb();
+  const fallbackDb = firebaseApp ? getFirestore(firebaseApp) : null;
   if (!db || !profile || !profile.id) return;
   try {
     const cleanedProfile = sanitizeForFirestore(profile);
     const userRef = doc(db, 'users', profile.id);
-    await setDoc(userRef, cleanedProfile, { merge: true });
+    await writeWithFirestoreFallback(async (activeDb) => {
+      await setDoc(doc(activeDb, 'users', profile.id), sanitizeForFirestore(cleanedProfile), { merge: true });
+    }, fallbackDb);
 
-    // Also update global leaderboard entry with full avatar, colors & stats
-    const leaderRef = doc(db, 'leaderboard', profile.id);
     const gamesPlayed = profile.stats?.gamesPlayed || 0;
     const wins = profile.stats?.wins || 0;
+    const losses = Math.max(0, gamesPlayed - wins);
     const winRate = gamesPlayed > 0
       ? Math.round((wins / gamesPlayed) * 100)
       : (wins > 0 ? 100 : 0);
 
-    const leaderData: Partial<LeaderboardEntry> & { updatedAt: string; isNgip?: boolean; isAdmin?: boolean; color?: string; drawingsCompleted?: number } = {
+    const leaderData: Partial<LeaderboardEntry> & { updatedAt: string; isNgip?: boolean; isAdmin?: boolean; color?: string; drawingsCompleted?: number; losses: number } = {
       userId: profile.id,
       username: profile.username || 'Player',
       avatar: profile.avatar || 'cat',
       color: profile.color || '#3B82F6',
       score: profile.stats?.totalScore || 0,
       wins,
+      losses,
       gamesPlayed,
       wordsGuessed: profile.stats?.wordsGuessed || 0,
       drawingsCompleted: profile.stats?.drawingsCompleted || 0,
@@ -273,7 +295,10 @@ export async function saveProfileToFirestore(profile: UserProfile): Promise<void
       updatedAt: new Date().toISOString(),
     };
 
-    await setDoc(leaderRef, sanitizeForFirestore(leaderData), { merge: true });
+    await writeWithFirestoreFallback(async (activeDb) => {
+      await setDoc(doc(activeDb, 'leaderboard', profile.id), sanitizeForFirestore(leaderData), { merge: true });
+    }, fallbackDb);
+
     console.log('✅ Firestore profile & Hall of Fame entry successfully saved for:', profile.username);
   } catch (err) {
     console.error('Failed to sync profile to Firestore:', err);
@@ -319,6 +344,7 @@ export function subscribeToUserProfile(userId: string, callback: (profile: UserP
 
 export async function fetchFirestoreLeaderboard(): Promise<LeaderboardEntry[] | null> {
   const db = getFirestoreDb();
+  const fallbackDb = firebaseApp ? getFirestore(firebaseApp) : null;
   if (!db) return null;
   try {
     const q = query(collection(db, 'leaderboard'), orderBy('score', 'desc'), limit(100));
@@ -327,10 +353,25 @@ export async function fetchFirestoreLeaderboard(): Promise<LeaderboardEntry[] | 
     let rank = 1;
     querySnapshot.forEach((docSnap) => {
       const data = docSnap.data() as LeaderboardEntry;
-      results.push({ ...data, rank: rank++ });
+      results.push({ ...data, rank: rank++, losses: data.losses ?? Math.max(0, (data.gamesPlayed || 0) - (data.wins || 0)) });
     });
     return results;
   } catch (err) {
+    if (fallbackDb && fallbackDb !== db) {
+      try {
+        const q = query(collection(fallbackDb, 'leaderboard'), orderBy('score', 'desc'), limit(100));
+        const querySnapshot = await getDocs(q);
+        const results: LeaderboardEntry[] = [];
+        let rank = 1;
+        querySnapshot.forEach((docSnap) => {
+          const data = docSnap.data() as LeaderboardEntry;
+          results.push({ ...data, rank: rank++, losses: data.losses ?? Math.max(0, (data.gamesPlayed || 0) - (data.wins || 0)) });
+        });
+        return results;
+      } catch (fallbackErr) {
+        console.warn('Firestore leaderboard query fallback failed:', fallbackErr);
+      }
+    }
     console.warn('Firestore leaderboard query fallback:', err);
     return null;
   }

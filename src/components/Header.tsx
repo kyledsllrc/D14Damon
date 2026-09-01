@@ -143,10 +143,10 @@ export const Header: React.FC<HeaderProps> = ({
             type="button"
             onClick={onOpenLeaderboard}
             className="p-1.5 sm:px-3 sm:py-1.5 text-xs font-black text-amber-800 dark:text-amber-300 bg-amber-100/80 dark:bg-amber-950/50 hover:bg-amber-200/90 dark:hover:bg-amber-900/70 border-2 border-amber-300 dark:border-amber-700/80 rounded-xl transition-all shadow-xs shrink-0 cursor-pointer flex items-center gap-1"
-            title="Hall of Fame & Leaderboards"
+            title="Leaderboard"
           >
             <Trophy className="w-3.5 h-3.5 text-amber-500" />
-            <span className="hidden sm:inline">Hall of Fame</span>
+            <span className="hidden sm:inline">Leaderboard</span>
           </button>
 
           {/* ⚙️ Professional Settings Button (Appearance, Music, SFX & Profile Controls) */}

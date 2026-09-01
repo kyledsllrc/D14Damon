@@ -119,7 +119,7 @@ const ARCADE_GAMES: GameCardConfig[] = [
     gradient: 'from-rose-600 via-amber-500 to-blue-600',
     glowColor: 'group-hover:border-rose-500/50',
     description: 'Match colors, drop Wild +4s, Skips & Reverse, and draw 1 card when you have no match. Shout UNO before opponents catch you!',
-    playersCount: '2 - 10 Players',
+    playersCount: '2 - 10 Players / 1v1 to 5v5 Teams',
     difficulty: 'Easy',
     popular: true,
     highlight: 'Authentic Draw-1 Rule & Wilds',
@@ -287,6 +287,21 @@ const ARCADE_GAMES: GameCardConfig[] = [
     highlight: 'Letter Tile Rearranging',
   },
   {
+    id: 'spelling_bee',
+    title: 'Spelling Bee',
+    category: 'brain',
+    tag: 'Word Hive Challenge',
+    badgeColor: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+    icon: Sparkles,
+    gradient: 'from-amber-500 via-yellow-400 to-emerald-500',
+    glowColor: 'group-hover:border-amber-500/50',
+    description: 'Build valid words from the shared letter hive using the center letter and race the clock with a crisp vocabulary duel.',
+    playersCount: '2 - 10 Players / VS AI',
+    difficulty: 'Medium',
+    popular: true,
+    highlight: 'Letter Hive + Valid Words',
+  },
+  {
     id: 'memory_rush',
     title: 'Memory Doodle Rush',
     category: 'solo',
@@ -434,7 +449,7 @@ export const ArcadeHub: React.FC<ArcadeHubProps> = ({
             </p>
           </div>
 
-          {/* Quick Player Profile & Hall of Fame CTA */}
+          {/* Quick Player Profile & Leaderboard CTA */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
             {user && (
               <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80 backdrop-blur-md flex items-center gap-3">
@@ -464,7 +479,7 @@ export const ArcadeHub: React.FC<ArcadeHubProps> = ({
               className="px-4 py-3 rounded-2xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 font-bold text-xs flex items-center justify-center gap-2 transition-all"
             >
               <Trophy className="w-4 h-4 text-amber-400" />
-              <span>Hall of Fame</span>
+              <span>Leaderboard</span>
             </button>
           </div>
         </div>

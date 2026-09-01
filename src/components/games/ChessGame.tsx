@@ -35,13 +35,13 @@ const getInitialBoard = (): Board => {
 
   const setupBackRank: PieceType[] = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'];
   setupBackRank.forEach((type, col) => {
-    board[0][col] = { type, color: 'w' };
-    board[7][col] = { type, color: 'b' };
+    board[0][col] = { type, color: 'b' };
+    board[7][col] = { type, color: 'w' };
   });
 
   for (let col = 0; col < 8; col += 1) {
-    board[1][col] = { type: 'p', color: 'w' };
-    board[6][col] = { type: 'p', color: 'b' };
+    board[1][col] = { type: 'p', color: 'b' };
+    board[6][col] = { type: 'p', color: 'w' };
   }
 
   return board;
@@ -200,10 +200,11 @@ export const ChessGame: React.FC<{ onBackToHub: () => void; aiConfig?: AiGameCon
           nextBoard[targetCoords.row][targetCoords.col] = { type: 'q', color: movingPiece.color };
         }
 
+        const nextTurn: PieceColor = turn === 'w' ? 'b' : 'w';
         setBoard(nextBoard);
         setSelected(null);
-        setTurn((prev) => (prev === 'w' ? 'b' : 'w'));
-        setStatus(`${turn === 'w' ? 'Black' : 'White'} to move`);
+        setTurn(nextTurn);
+        setStatus(`${nextTurn === 'w' ? 'White' : 'Black'} to move`);
         return;
       }
 
@@ -273,51 +274,51 @@ export const ChessGame: React.FC<{ onBackToHub: () => void; aiConfig?: AiGameCon
   }, [board, legalMoves, selected]);
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-4 animate-fade-in font-sans">
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+    <div className="w-full max-w-6xl mx-auto space-y-4 animate-fade-in font-sans">
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-[#0f172a] p-4 rounded-[28px] border border-slate-700 shadow-[0_18px_40px_rgba(15,23,42,0.35)]">
         <div className="flex items-center gap-3">
           <button
             onClick={onBackToHub}
-            className="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold transition-all"
+            className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-lg font-black text-slate-900 dark:text-white">Chess</h2>
-              <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-violet-100 dark:bg-violet-950 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800">
-                {aiConfig ? 'VS AI' : 'Local Board'}
+              <h2 className="text-lg font-black text-white">Chess</h2>
+              <span className="px-2 py-0.5 text-[10px] font-black rounded-full bg-violet-500/15 text-violet-300 border border-violet-400/35">
+                {aiConfig ? 'VS AI' : '1v1 Board'}
               </span>
             </div>
-            <p className="text-xs text-slate-500">Classic move-by-move strategy with clean board highlights and animated pieces.</p>
+            <p className="text-xs text-slate-400">Clean tactical board with legal move previews and a real 1v1 match flow.</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300">
-          <Swords className="w-4 h-4 text-violet-500" />
+        <div className="flex items-center gap-2 text-xs font-bold text-slate-200">
+          <Swords className="w-4 h-4 text-violet-300" />
           <span>{status}</span>
         </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_220px] gap-4">
-        <div className="rounded-[28px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-sm">
-          <div className="mx-auto max-w-[680px] aspect-square overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-950">
+        <div className="rounded-[28px] border border-slate-700 bg-[#0f172a] p-3 shadow-[0_16px_40px_rgba(15,23,42,0.35)]">
+          <div className="mx-auto max-w-[720px] aspect-square overflow-hidden rounded-[22px] border border-slate-600 bg-slate-950 shadow-inner">
             <div className="grid grid-cols-8 h-full w-full">
               {boardSquares.flat().map(({ sq, cell, isSelected, isLegal, isDark }) => (
                 <button
                   key={sq}
                   onClick={() => handleCellClick(sq)}
                   className={`relative flex items-center justify-center text-2xl sm:text-3xl transition-all ${
-                    isDark ? 'bg-slate-700/80 text-white' : 'bg-slate-200/80 text-slate-900'
-                  } ${isSelected ? 'ring-4 ring-amber-400 shadow-inner' : ''} ${isLegal ? 'shadow-[inset_0_0_0_3px_rgba(34,197,94,0.65)]' : ''}`}
+                    isDark ? 'bg-[#b88b5c]' : 'bg-[#f0d9b5]'
+                  } ${isSelected ? 'ring-4 ring-amber-300 shadow-inner' : ''} ${isLegal ? 'shadow-[inset_0_0_0_4px_rgba(34,197,94,0.8)]' : ''}`}
                 >
-                  {isLegal && !cell && <span className="absolute h-3.5 w-3.5 rounded-full bg-emerald-400/80" />}
+                  {isLegal && !cell && <span className="absolute h-3.5 w-3.5 rounded-full bg-emerald-500/75" />}
                   {cell && (
                     <motion.div
                       layout
                       whileHover={{ scale: 1.06 }}
                       whileTap={{ scale: 0.97 }}
-                      className="drop-shadow-[0_3px_6px_rgba(0,0,0,0.25)]"
+                      className="drop-shadow-[0_3px_6px_rgba(0,0,0,0.3)]"
                     >
                       {PIECE_SYMBOLS[`${cell.color}${cell.type}`]}
                     </motion.div>
@@ -328,7 +329,7 @@ export const ChessGame: React.FC<{ onBackToHub: () => void; aiConfig?: AiGameCon
           </div>
         </div>
 
-        <div className="rounded-[28px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm space-y-4">
+        <div className="rounded-[28px] border border-slate-700 bg-[#0f172a] p-4 shadow-[0_16px_40px_rgba(15,23,42,0.35)] space-y-4">
           <button
             onClick={handleReset}
             className="flex w-full items-center justify-center gap-2 rounded-2xl bg-violet-600 px-4 py-3 text-sm font-black text-white shadow-lg shadow-violet-600/30 hover:bg-violet-500 transition-all"
@@ -337,15 +338,15 @@ export const ChessGame: React.FC<{ onBackToHub: () => void; aiConfig?: AiGameCon
             New Game
           </button>
 
-          <div className="rounded-2xl bg-violet-50 dark:bg-violet-950/50 border border-violet-200 dark:border-violet-800 p-3 text-xs text-violet-700 dark:text-violet-300">
+          <div className="rounded-2xl bg-violet-500/10 border border-violet-400/40 p-3 text-xs text-violet-200">
             <div className="flex items-center gap-2 font-black">
               <Sparkles className="w-4 h-4" />
               Match Flow
             </div>
             <ul className="mt-2 space-y-1.5">
               <li>• Click a piece to reveal legal moves.</li>
-              <li>• Capture, protect, and build the attack.</li>
-              <li>• AI responds with a random legal move.</li>
+              <li>• Capture, protect, and coordinate attacks.</li>
+              <li>• AI responds with a legal counter move.</li>
             </ul>
           </div>
         </div>

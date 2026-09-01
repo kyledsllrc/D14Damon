@@ -113,7 +113,9 @@ export const GlobalLeaderboard: React.FC<{ isOpen: boolean; onClose: () => void 
   );
 
   const myGamesPlayed = user ? Math.max(user.stats.gamesPlayed || 0, (user.stats.wins || 0) > 0 ? 1 : 0) : 0;
-  const myLosses = user ? Math.max(0, myGamesPlayed - (user.stats.wins || 0)) : 0;
+  const myLosses = user
+    ? Math.max(0, myGamesPlayed - (user.stats.wins || 0))
+    : 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm animate-fade-in">
@@ -126,7 +128,7 @@ export const GlobalLeaderboard: React.FC<{ isOpen: boolean; onClose: () => void 
             </div>
             <div>
               <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-                <span>Global Hall of Fame</span>
+                <span>Leaderboard</span>
               </h2>
               <p className="text-[11px] sm:text-xs text-slate-500">
                 Official game points, wins, and losses across all players

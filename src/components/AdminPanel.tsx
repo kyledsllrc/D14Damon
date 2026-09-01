@@ -361,6 +361,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
               </div>
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-2">
+              <div className="rounded-2xl border border-slate-800 bg-slate-950 p-3">
+                <div className="text-[10px] uppercase tracking-[0.14em] text-slate-400">Total Players</div>
+                <div className="mt-2 text-2xl font-black text-white">{allAccountsList.length}</div>
+              </div>
+              <div className="rounded-2xl border border-violet-500/30 bg-violet-500/10 p-3">
+                <div className="text-[10px] uppercase tracking-[0.14em] text-violet-300">VIP Members</div>
+                <div className="mt-2 text-2xl font-black text-white">{allAccountsList.filter((a) => a.isNgip || a.isAdmin).length}</div>
+              </div>
+              <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3">
+                <div className="text-[10px] uppercase tracking-[0.14em] text-emerald-300">Admins</div>
+                <div className="mt-2 text-2xl font-black text-white">{allAccountsList.filter((a) => a.isAdmin).length}</div>
+              </div>
+            </div>
+
             {/* User List Cards */}
             <div className="space-y-3">
               {filteredAccounts.length === 0 ? (
